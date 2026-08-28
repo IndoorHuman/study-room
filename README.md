@@ -30,7 +30,8 @@ Your library lives in its own folder (outside this app folder). Setup writes key
 The app never checks online for updates. When a newer release exists, download
 it and replace the app folder — your library folder stays unchanged.
 
-P26-08-28
+<!-- OWNER_COPY_UPDATE_NEWEST_DATE -->
+2026-08-28
 
 <!-- OWNER_COPY_UPDATE_WHATS_NEW -->
 Updates replace the app folder only. Your library stays in its own folder, outside the app.

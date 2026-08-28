@@ -154,7 +154,8 @@ def _fill_slot_after_marker(text: str, marker: str, content: str) -> str:
     if not content:
         return text
     pattern = r"(<!--\s*" + re.escape(marker) + r"\s*-->\n?)"
-    replacement = r"\1" + content.rstrip() + "\n"
+    # Use \g<1>, not \1 — dates like 2026-… make \12026 an octal char ('P').
+    replacement = r"\g<1>" + content.rstrip() + "\n"
     if re.search(pattern, text):
         return re.sub(pattern, replacement, text, count=1)
     return text

@@ -42,6 +42,21 @@ OWNER_COPY_WHATS_NEW = (
 class ReleasePublicContract(unittest.TestCase):
     """UPD-08: release stops on missing note / failed stage / failed compat."""
 
+    def test_fill_slot_keeps_year_dates(self):
+        """Regression: \\1 + 2026… was octal \\120 → 'P26-…' in the README."""
+        import release_public as rp
+        text = (
+            "unchanged\n"
+            "<!-- OWNER_COPY_UPDATE_NEWEST_DATE -->\n"
+            "\n"
+            "<!-- OWNER_COPY_UPDATE_WHATS_NEW -->\n"
+        )
+        out = rp._fill_slot_after_marker(
+            text, "OWNER_COPY_UPDATE_NEWEST_DATE", "2026-08-28")
+        self.assertIn("<!-- OWNER_COPY_UPDATE_NEWEST_DATE -->", out)
+        self.assertIn("2026-08-28", out)
+        self.assertNotIn("P26-08-28", out)
+
     def test_release_cli_exists(self):
         if not RELEASE_CLI.is_file():
             self.fail(
