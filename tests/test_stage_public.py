@@ -441,7 +441,7 @@ NODE_REMOVED_THIS_PHASE = ()
 # 52/70); this commit sets BOTH pins BY VALUE to disk, same commit as
 # NODE_SUITES in test_live_render.cjs (26.99955 drift lesson).
 EXPECTED_PYTHON_SUITES = 58     # measured: ls tests/test_*.py | wc -l
-EXPECTED_NODE_SUITES = 73       # measured: ls tests/*.cjs | wc -l
+EXPECTED_NODE_SUITES = 74       # measured: ls tests/*.cjs | wc -l
 # ⚠⚠ THESE TWO MOVED BY EXACTLY WHAT THIS WORK ADDED, AND BY NOT ONE MORE —
 # +1 python and +1 node, each named in the tuples above. ⛔ THE GATE IS STILL
 # RED, AND THAT IS DELIBERATE: measured at HEAD `aef7f24` with this work

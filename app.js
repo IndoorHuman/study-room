@@ -562,6 +562,29 @@
     'python3 tools/update_room.py --source [downloaded folder] ' +
     '--dest [live app folder].';
 
+  // #171 launch blocker 3 — her words 2026-08-28, shape B, one shared
+  // sentence for every long job (writing sort and picture bring-in).
+  // ⛔ Byte-exact. Do not rewrite.
+  var OWNER_COPY_LONG_RUN_WARNING =
+    'This next part can run for an evening or more than a day. ' +
+    'I don\u2019t know which yet. I\u2019ll keep going until it\u2019s done.';
+
+  // Show her warning, then start only on continue. One helper so every
+  // long door says the same thing.
+  function warnBeforeLongRun(box, onContinue) {
+    if (typeof onContinue !== 'function') { return; }
+    if (!box) { onContinue(); return; }
+    box.innerHTML =
+      '<p>' + escapeHtml(OWNER_COPY_LONG_RUN_WARNING) + '</p>' +
+      '<p><button type="button" id="btn-long-run-continue" ' +
+      'style="background:none;border:none;color:var(--ink);' +
+      'cursor:pointer;font:inherit;text-decoration:underline">' +
+      escapeHtml('continue') + '</button></p>';
+    var btn = $('btn-long-run-continue');
+    if (!btn) { onContinue(); return; }
+    btn.addEventListener('click', function () { onContinue(); });
+  }
+
   function appendCopyBlock(parent, text, extraStyle) {
     var span = document.createElement('span');
     span.style.cssText = 'display:block;margin-top:4px;user-select:all' +
@@ -897,30 +920,33 @@
     if (!APP.scan) { return; }
     var box = $('import-report');
     $('btn-import').disabled = true;
-    // Machine time is unlimited; the user's effort is what is budgeted.
-    box.innerHTML = '<p>copying your things in — you can sit back, this ' +
-      'may take a minute.</p>';
-    apiPost('/api/import', {
-      path: APP.scan.path,
-      consolidation: q1Answer()
-    }).then(function (res) {
-      if (!res.ok) {
+    // #171: warn first — this path is the writing sort (and any pictures
+    // in the folder). Her sentence, then continue starts the copy.
+    warnBeforeLongRun(box, function () {
+      box.innerHTML = '<p>' +
+        escapeHtml('copying your things in —') + '</p>';
+      apiPost('/api/import', {
+        path: APP.scan.path,
+        consolidation: q1Answer()
+      }).then(function (res) {
+        if (!res.ok) {
+          $('btn-import').disabled = false;
+          quietError(box, errorText(res, 'The import could not finish. Your ' +
+            'source folder is untouched.'));
+          return;
+        }
+        // 25-03 (D-02, SC-3): the POST answers immediately — the copying
+        // runs in a server-side worker, and this screen only READS how far
+        // along it is. First paint shows the honest zero state; the chain
+        // of one-shot re-reads below takes it from there.
+        renderImportProgress(box, { state: 'running', done: 0,
+          total: res.data.total || 0, started_ms: Date.now() });
+        readImportProgress(box, 0);
+      }).catch(function () {
         $('btn-import').disabled = false;
-        quietError(box, errorText(res, 'The import could not finish. Your ' +
-          'source folder is untouched.'));
-        return;
-      }
-      // 25-03 (D-02, SC-3): the POST answers immediately — the copying
-      // runs in a server-side worker, and this screen only READS how far
-      // along it is. First paint shows the honest zero state; the chain
-      // of one-shot re-reads below takes it from there.
-      renderImportProgress(box, { state: 'running', done: 0,
-        total: res.data.total || 0, started_ms: Date.now() });
-      readImportProgress(box, 0);
-    }).catch(function () {
-      $('btn-import').disabled = false;
-      quietError(box, 'The room could not be reached, so nothing was ' +
-        'brought in — is the server still running in your terminal?');
+        quietError(box, 'The room could not be reached, so nothing was ' +
+          'brought in — is the server still running in your terminal?');
+      });
     });
   }
 
@@ -24868,7 +24894,8 @@
     //
     // What replaces it is nothing: the import goes straight to the shipped
     // vault read, which was always what "just bring them in" did.
-    doVaultImport();
+    // #171: warn first — whole-vault read is the long writing sort.
+    warnBeforeLongRun(box, doVaultImport);
   }
 
   function initVaultImport() {
@@ -25188,74 +25215,78 @@
       exclude: excludeFolders, box: box, room: roomMode === true };
     var btn = ACTIVE_ADAPTER.btnId ? $(ACTIVE_ADAPTER.btnId) : null;
     if (btn) { btn.disabled = true; }
-    if (ACTIVE_ADAPTER.room || source === VAULT_SOURCE) {
-      // 26.97-07: the vault takes this branch too. macOS asks nothing to read
-      // a folder she has already pointed the room at, so the one-time consent
-      // note would be a false sentence about her own machine.
-      // 26.65-05: in-room re-pull — only the calm interim paints (the
-      // S1-loading backstop still holds: no error copy before the call
-      // returns). The TCC one-time note belongs to the first connect on
-      // the sources screen, not to a re-pull of an already-allowed app.
+    // #171: warn first — Notes/vault reading and Photos bring-in are both
+    // long doors; one shared sentence.
+    warnBeforeLongRun(box, function () {
+      if (ACTIVE_ADAPTER.room || source === VAULT_SOURCE) {
+        // 26.97-07: the vault takes this branch too. macOS asks nothing to read
+        // a folder she has already pointed the room at, so the one-time consent
+        // note would be a false sentence about her own machine.
+        // 26.65-05: in-room re-pull — only the calm interim paints (the
+        // S1-loading backstop still holds: no error copy before the call
+        // returns). The TCC one-time note belongs to the first connect on
+        // the sources screen, not to a re-pull of an already-allowed app.
+        box.innerHTML =
+          '<p class="onb-adapter-checking">' + escapeHtml('checking…') + '</p>';
+      } else {
+      // The TCC one-time note, framed as care (bold the single word `once`,
+      // used sparingly). A calm interim ('checking…') paints first so no error
+      // copy can appear before the collect call returns (the S1-loading
+      // backstop). macOS attributes the one-time prompt to the terminal app.
+      // The noun swaps Notes<->Photos; both full lines are literal (the shipped
+      // Notes line stays byte-exact for its pinned copy check).
       box.innerHTML =
+        '<p>' + escapeHtml('macOS will ask ') +
+        '<strong>' + escapeHtml('once') + '</strong>' +
+        escapeHtml(source === 'apple-photos'
+          ? ' to let the room reach your Photos — say OK. The room only ever reads; it never changes a thing.'
+          : ' to let the room reach your Notes — say OK. The room only ever reads; it never changes a thing.') +
+        '</p>' +
         '<p class="onb-adapter-checking">' + escapeHtml('checking…') + '</p>';
-    } else {
-    // The TCC one-time note, framed as care (bold the single word `once`,
-    // used sparingly). A calm interim ('checking…') paints first so no error
-    // copy can appear before the collect call returns (the S1-loading
-    // backstop). macOS attributes the one-time prompt to the terminal app.
-    // The noun swaps Notes<->Photos; both full lines are literal (the shipped
-    // Notes line stays byte-exact for its pinned copy check).
-    box.innerHTML =
-      '<p>' + escapeHtml('macOS will ask ') +
-      '<strong>' + escapeHtml('once') + '</strong>' +
-      escapeHtml(source === 'apple-photos'
-        ? ' to let the room reach your Photos — say OK. The room only ever reads; it never changes a thing.'
-        : ' to let the room reach your Notes — say OK. The room only ever reads; it never changes a thing.') +
-      '</p>' +
-      '<p class="onb-adapter-checking">' + escapeHtml('checking…') + '</p>';
-    }
-    // 26.65-04 (law 5): the Notes picker's unchecked-to-exclude set rides
-    // the payload as exclude_folders; anything on that list is filtered at
-    // enumeration server-side and never enters the room. Photos sends none
-    // (D-04 — no album picker, privacy-by-omission).
-    var payload = { source: source };
-    // 26.97-09 (law 5, T-26.97-03): PER SOURCE, from the map above. Gated on
-    // ONE source by name, this silently DROPPED the vault's kept-out folders
-    // on BOTH ways in — the picker's confirm handed them here and they never
-    // reached the wire, so the server defaulted the list to empty and fenced
-    // nothing. A source that takes no list is still sent none.
-    if (sourceExclusionKey(source) && Array.isArray(excludeFolders)) {
-      payload.exclude_folders = excludeFolders;
-    }
-    apiPost('/api/adapter/collect', payload).then(function (res) {
-      if (!res.ok) {
-        reenableNotes();
-        // 26.97-10 (T-26.97-43): THE FOURTH OUTCOME, kept apart by SHAPE
-        // rather than by wording. A refusal carries `refused: true` and NO
-        // `error` key at all (plan 04), so it is distinguishable without
-        // reading a sentence. ⛔ Falling through to the line below would
-        // paint the could-not-finish wording and send her into a retry
-        // loop against a condition retrying cannot change.
-        if (res.data && res.data.refused === true) {
-          // T-26.97-43: the OUTCOME TOKEN travels with the refusal. It is
-          // never rendered -- the card maps it to one of her two recorded
-          // sentences -- so no path, code or trace crosses this seam.
-          renderVaultRefusal(box, res.data.reason);
+      }
+      // 26.65-04 (law 5): the Notes picker's unchecked-to-exclude set rides
+      // the payload as exclude_folders; anything on that list is filtered at
+      // enumeration server-side and never enters the room. Photos sends none
+      // (D-04 — no album picker, privacy-by-omission).
+      var payload = { source: source };
+      // 26.97-09 (law 5, T-26.97-03): PER SOURCE, from the map above. Gated on
+      // ONE source by name, this silently DROPPED the vault's kept-out folders
+      // on BOTH ways in — the picker's confirm handed them here and they never
+      // reached the wire, so the server defaulted the list to empty and fenced
+      // nothing. A source that takes no list is still sent none.
+      if (sourceExclusionKey(source) && Array.isArray(excludeFolders)) {
+        payload.exclude_folders = excludeFolders;
+      }
+      apiPost('/api/adapter/collect', payload).then(function (res) {
+        if (!res.ok) {
+          reenableNotes();
+          // 26.97-10 (T-26.97-43): THE FOURTH OUTCOME, kept apart by SHAPE
+          // rather than by wording. A refusal carries `refused: true` and NO
+          // `error` key at all (plan 04), so it is distinguishable without
+          // reading a sentence. ⛔ Falling through to the line below would
+          // paint the could-not-finish wording and send her into a retry
+          // loop against a condition retrying cannot change.
+          if (res.data && res.data.refused === true) {
+            // T-26.97-43: the OUTCOME TOKEN travels with the refusal. It is
+            // never rendered -- the card maps it to one of her two recorded
+            // sentences -- so no path, code or trace crosses this seam.
+            renderVaultRefusal(box, res.data.reason);
+            return;
+          }
+          renderAdapterError(box, errorText(res, adapterErrorCopy('')));
           return;
         }
-        renderAdapterError(box, errorText(res, adapterErrorCopy('')));
-        return;
-      }
-      // The POST answers immediately; the export worker runs server-side and
-      // this screen only READS how far along it is. Paint the honest export
-      // zero-state, then let the one-shot re-read chain take it from there.
-      renderAdapterProgress(box, { state: 'running', done: 0, total: 0,
-        started_ms: Date.now() });
-      readAdapterProgress(box, 0);
-    }).catch(function () {
-      reenableNotes();
-      renderAdapterError(box, 'The room could not be reached, so nothing ' +
-        'was brought in — is the server still running in your terminal?');
+        // The POST answers immediately; the export worker runs server-side and
+        // this screen only READS how far along it is. Paint the honest export
+        // zero-state, then let the one-shot re-read chain take it from there.
+        renderAdapterProgress(box, { state: 'running', done: 0, total: 0,
+          started_ms: Date.now() });
+        readAdapterProgress(box, 0);
+      }).catch(function () {
+        reenableNotes();
+        renderAdapterError(box, 'The room could not be reached, so nothing ' +
+          'was brought in — is the server still running in your terminal?');
+      });
     });
   }
 
