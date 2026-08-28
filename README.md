@@ -2,6 +2,13 @@
 
 thank you for using this app I have built, it is an open source app, which it means you have 100% freedom to change it and run it however you like but I cannot provide any kind of support
 
+## Where to start
+
+- See how the visual room works → [open the demo room](https://indoorhuman.github.io/mansfield-room-demo/room/)
+- Understand what the product is → [read the walkthrough](https://indoorhuman.github.io/mansfield-room-demo/)
+- See how setup works on day one → [what the first day looks like, step by step](https://indoorhuman.github.io/mansfield-room-demo/start/)
+- [Watch the two-minute film](https://indoorhuman.github.io/mansfield-room-demo/film.mp4) — from an empty computer to the Study Room on your machine, with your own writing coming back a few pieces at a time. No voice; captions only.
+
 ## First run
 
 1. Get a copy — download the latest **Release** from this GitHub page and unzip it, or clone the repository.
