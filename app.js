@@ -7061,7 +7061,8 @@
   var CLEAN_PREVIEW_LEAD = 'if this looks right on these, it is right on the rest. you can take the whole run back with one tap.';
   var CLEAN_PREVIEW_BEFORE = 'as it is now';
   var CLEAN_PREVIEW_AFTER = 'after';
-  var CLEAN_PREVIEW_NONE = 'nothing here is hard to read — every note in this folder already has its line breaks.';
+  // #77 — owner pick B, 2026-08-28. Dates + line breaks both checked.
+  var CLEAN_PREVIEW_NONE = 'nothing to do here — the notes in this folder already have their line breaks, and none kept the wrong date at the top.';
   var CLEAN_APPROVE_COPY = 'go ahead';
   var CLEAN_READING_COPY = 'looking through your notes…';
   var CLEAN_WRITE_NOTHING = 'nothing needed changing — your files are exactly as you wrote them.';
