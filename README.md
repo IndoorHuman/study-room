@@ -9,10 +9,9 @@ thank you for using this app I have built, it is an open source app, which it me
 The app never checks online for updates. When a newer release exists, download
 it and replace the app folder — your library folder stays unchanged.
 
-P26-08-28
+<!-- OWNER_COPY_UPDATE_NEWEST_DATE -->
 
 <!-- OWNER_COPY_UPDATE_WHATS_NEW -->
-Updates replace the app folder only. Your library stays in its own folder, outside the app.
 
 <!-- OWNER_COPY_UPDATE_DOWNLOAD -->
 Download the latest release from GitHub and unzip it.
