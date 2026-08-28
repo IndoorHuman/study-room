@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Study Room</title>
+<!-- ⚠ THIS STRING MOVED FOR THE FIRST TIME SINCE 26.6, AND THE REASON IS THE
+     WHOLE OF WHY IT SHOULD NOT MOVE OFTEN. Plans 26.95-30 and -31 both edited
+     tokens.css and deliberately left it alone, correctly: they added rules for
+     elements that did not exist before, so a browser holding the cached sheet
+     rendered a NEW element unstyled — visible, harmless, and gone on the next
+     ordinary refresh.
+     26.95-35 is different in KIND. It changes the rendered state of an element
+     that has ALREADY been served: the quiet `not relevant` control gains the
+     focus ring it was missing. A returning browser on the cached sheet keeps
+     the defect — and the person it keeps it for is precisely the person who
+     has used the room before. That is the stale-cache failure standing
+     prohibition 9 exists for, and it is what distinguishes a behavioural rule
+     from an additive one.
+     The value follows the same rule the two scripts below obey: it only has to
+     CHANGE, and it must not be one already served against a different file.
+     `26.95-35` has been served against nothing — the parallel counter spent
+     `26.95-01`…`-16`, and plans 30–34 took `-30a`, `-31`, `-32a`, `-33`, `-34`
+     on app.js and core.js. -->
+<link rel="stylesheet" href="tokens.css?v=26.95-60">
+</head>
+<body>
+<main>
+
+  <section id="screen-setup" class="screen active">
+    <h1>The Study Room</h1>
+    <p>Welcome. This room keeps things you already saved, and hands a few
+    back to you when you visit. Everything stays on your computer.</p>
+
+    <div class="card">
+      <label for="library-path-input">Your library folder — where your
+      things will live. A plain folder you can open anytime.</label>
+      <input id="library-path-input" type="text" value="~/StudyRoom">
+      <p><button id="btn-library" class="btn" type="button">Use this
+      folder</button></p>
+      <div id="library-note"></div>
+    </div>
+
+    <div class="card">
+      <label for="source-path-input">A folder to bring things in from.
+      Nothing in that folder is ever changed — the room keeps its own
+      copies.</label>
+      <input id="source-path-input" type="text"
+             placeholder="for example: ~/Documents/notes">
+      <p><button id="btn-scan" class="btn" type="button">Look
+      inside</button></p>
+      <div id="scan-preview"></div>
+    </div>
+
+    <div class="card" id="q1-consolidation">
+      <p class="card-title">Group your photos into an album?</p>
+      <label><input type="radio" name="q1" value="yes"> yes</label>
+      <label><input type="radio" name="q1" value="no"> no</label>
+      <label><input type="radio" name="q1" value="skip" checked> skip for
+      now</label>
+    </div>
+
+    <div class="card">
+      <p><button id="btn-import" class="btn" type="button" disabled>Bring
+      them in</button></p>
+      <div id="import-report"></div>
+    </div>
+
+    <!-- 26.4-01 (SC3): the door to the whole-vault import + fence screen —
+         a quiet lowercase link, never the default path. -->
+    <p><button id="btn-whole-vault" type="button"
+      style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">or bring in your whole vault, with your private folders kept unread</button></p>
+  </section>
+
+  <section id="screen-blessing" class="screen">
+    <h2>A first look through your things</h2>
+    <p>These are some of the oldest things you saved, one at a time. You
+    decide what the room may hand back to you.</p>
+    <!-- 26.999 night, HER RULING (chosen from an offered set,
+         AskUserQuestion, 2026-08-25): blessing reached WITHOUT the candle
+         says the sitting is recommended first — "when the user want to go
+         to blessing without the candle we need to get user know we highly
+         recommend the reflection first". The sentence below is the one
+         she picked, byte-exact; pinned in test_diegetic_wiring. ⛔ No
+         agent may reword it. It rides the screen itself (both doors in —
+         the stack and the Manage grind — reach this screen; the candle
+         sitting's own walk never does). -->
+    <p id="blessing-candle-first" style="color:var(--ink-soft)">the librarian recommends a sitting at the candle first — it looks through what's new with you before you bless.</p>
+    <!-- 22-uat: the decision bar sits ABOVE the content and stays put
+         (sticky) while long content scrolls in its own region below —
+         the judgment is always in reach, whatever the length (H9). -->
+    <div id="blessing-controls">
+      <p id="blessing-progress"></p>
+      <div id="blessing-verdicts">
+        <button id="btn-bless-safe" class="btn"
+          type="button">joyful — bring it back</button>
+        <button id="btn-bless-never" class="btn btn-never"
+          type="button">put it away for good</button>
+        <button id="btn-bless-notnow" class="btn"
+          type="button">not now</button>
+        <button id="btn-bless-skip" type="button"
+          style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">skip</button>
+      </div>
+      <div id="blessing-note"></div>
+      <p><button id="blessing-enough" type="button"
+        style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">that's enough for today</button></p>
+    </div>
+    <div id="blessing-card" class="card"></div>
+  </section>
+
+  <section id="screen-shelf" class="screen">
+    <h2>Your shelf</h2>
+    <!-- 22-uat: the shelf says what it is and how it opens; Q2 and the
+         pile link sit above the cards, in reach without scrolling. -->
+    <p id="shelf-subtitle">a few things you chose to meet again — open one, or just look.</p>
+    <div id="q2-habit-anchor"></div>
+    <p><button id="shelf-pile-link" type="button"
+      style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">look through the pile</button></p>
+    <!-- 23-03: the soft cover's slot — at most one wrapped unseen thing
+         per visit is rendered here by app.js; with no candidate the slot
+         simply stays empty, with no copy of any kind. -->
+    <div id="shelf-cover"></div>
+    <div id="shelf-cards"></div>
+    <div id="shelf-empty"></div>
+  </section>
+
+  <section id="screen-reader" class="screen">
+    <p><button id="reader-back" type="button"
+      style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">back to the shelf</button></p>
+    <h2 id="reader-title"></h2>
+    <!-- 23-uat: the reaction line sits ABOVE the content and stays put
+         (sticky) while long content scrolls in its own region below —
+         the judgment is always in reach, whatever the length (H9). -->
+    <div id="reaction-bar"></div>
+    <div id="reader-note"></div>
+    <!-- VERBATIM LAW (SRM-03): reader-content receives content only through
+         the renderMarkdown seam or a plain escaped img tag — no rewording,
+         no filters, no decoration, no CSS transitions or animations on the
+         content itself. -->
+    <div id="reader-content"></div>
+    <!-- 26.4-05 (D-09/D-10, law 4): the user's own "your notes" layer sits
+         BELOW the verbatim content, after a clear divider — unmistakably the
+         user's margin, never mixed into the content. Filled by app.js
+         (renderReaderComments); identical whether or not vault sync applies
+         (D-10) — no label clutter. -->
+    <div id="reader-comments"></div>
+  </section>
+
+  <section id="screen-manage" class="screen">
+    <!-- ⭐ 26.99955-07 (finding 11): THE MASTHEAD IS ONE ROW, as drawn — the
+         title, a dashed rule carrying a coral diamond, the sections button,
+         then the shelf link. Shipped these were three stacked rows with no
+         rule at all. ⛔ NOT ONE WORD MOVES: `Your library`, `☰ sections`
+         (her Q23 ruling) and `back to the shelf` are the same strings on
+         the same controls with the same ids — this is arrangement only. The
+         diamond and the rule are ornament, carry no wording, and are
+         aria-hidden so nothing new is announced either. -->
+    <div class="manage-masthead">
+      <h2>Your library</h2>
+      <span class="manage-masthead-rule" aria-hidden="true"><span></span><i>&#9670;</i><span></span></span>
+    <!-- 26.99955-03 (her fallback ruling: "at least make this panel can
+         be hidden"; A2 confirmed at 26.99955-02 — the full section list
+         lives ONLY behind this control): the ☰ sections button reopens
+         the old list as an overlay. ⭐ 26.99955-05 (her verdict Q23,
+         2026-08-26): the label `☰ sections` is HERS now — she was shown
+         it as a placeholder and KEPT it, so the ✋ flag is off and this
+         is a ruling, not a guess. Move it only on a new ruling of hers.
+         ⛔ No heading and no footer sit inside the overlay panel: she
+         was offered both (Q24, Q25) and chose neither. -->
+    <!-- ⭐⭐ 26.99955 UAT G-…-06, HER OWN ASK of 2026-08-26: "we need to have
+         back to the room button as well". The room is home in this app —
+         every other surface is something you open on top of it — and until
+         now the way home was the QUIETEST thing on this screen: small
+         underlined text rendering above and outside the panel, while the
+         header's two strong positions went to the sections list and a
+         lateral move to the shelf.
+         ⛔ NOT ONE NEW WORD. `back to the room` is the string the existing
+         door already carries; this control borrows it rather than coining a
+         second one, so there is no wording here for anyone to have written.
+         ⭐ HER RULING ON THE ARRANGEMENT, 2026-08-26: "Room gets the louder
+         look" — it sits FIRST and carries `.btn-lead`, and `back to the
+         shelf` keeps exactly the button it has now. She chose that over
+         quietening the shelf, having been told that quietening it would
+         undo part of her own "make buttons look like buttons" ruling.
+         ⛔ The outer `#room-panel-back` STAYS. Removing a way out is a
+         second decision and she has not made it. -->
+      <button id="manage-to-room" type="button" class="btn btn-lead">back to the room</button>
+      <button id="manage-sections-toggle" type="button" class="btn">&#9776; sections</button>
+      <button id="manage-to-shelf" type="button"
+        style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">back to the shelf</button>
+    </div>
+    <div id="manage-summary"></div>
+    <div id="manage-import-report"></div>
+    <!-- 26-05 UAT (the owner): the blessing entry lived here since Phase
+         22, before the room existed. The DESK is the blessing home now;
+         two doors to the same act read as a duplicate. Removed. -->
+    <div id="pile-note"></div>
+    <!-- 26.99955-01 (her 2026-08-21 ruling — side panel removed, all panes
+         on the main page): the Manage landing page. Three empty grid
+         containers on purpose: app.js (renderManageTiles) fills all three
+         from the LIVE MANAGE_PANES registry — never a second hand-kept
+         pane list (the F-9 class). ⭐ 26.99955-05 (her verdicts Q11 and
+         Q12, 2026-08-26): the groups stay HEADINGLESS BY HER RULING, not
+         pending one — she was offered a heading over the six counted
+         tiles and over the last group and chose neither. The absence is
+         now the ruled state; only a new ruling of hers adds one. -->
+    <div id="manage-landing">
+      <!-- 26.95-41 (UAT F-1, hers): ...and THIS is where she came looking
+           for it. Her words: "lack of the guideance for users, it is hard
+           to know I need to press the stack of paper in order to find
+           bless of photos". A SIGNPOST, never the door back: the second
+           door is what 26-05 removed and this does not reinstate it — it
+           says where the one door is. ⚠ Its own container, because
+           #pile-note above is a TRANSIENT slot that several paths clear,
+           and a signpost written there would vanish the first time
+           anything else spoke. ⭐ 26.99955-02 (her ruling, 2026-08-25):
+           the signpost's home is the landing page — it stays on the front
+           page, visible before any section opens. -->
+      <div id="manage-bless-where"></div>
+      <!-- 26.99955-03 (her 2026-08-21 option-B ruling: the candle IS the
+           landing pane): Row A — the candle portrait card, the librarian
+           pane's own two containers, and the door tiles beside them. The
+           two manage-sec-librarian* divs MOVED here from #manage-panes
+           (elements moved, never recreated; ids unchanged — every
+           renderer looks them up by id, and the creation fns are
+           $(id)-first idempotent, so the anchor chains stay dead-safe).
+           The candle card is an empty div on purpose: app.js
+           (renderCandleCard) fills it — nameplate from the registry
+           lookup; NO chip row and NO caption here (those words are HERS,
+           the plan-05 copy pass). -->
+      <div class="manage-row-a">
+        <div id="manage-candle-card"></div>
+        <div class="manage-row-a-pane">
+          <div id="manage-sec-librarian-settings"></div>
+          <div id="manage-sec-librarian"></div>
+          <div id="manage-doors-grid"></div>
+        </div>
+      </div>
+      <div id="manage-counted-grid"></div>
+      <!-- ⭐ 26.99955-07 (finding 6): ROW C — the artboard seats the four
+           numbers BESIDE the last tile group, not full-width underneath
+           everything. A layout wrapper only: both children keep their ids,
+           their renderers and (⛔) every one of their words — her Q20/Q21/Q22
+           verdicts decide what the numbers card says and none of them is
+           touched here. No heading is introduced: Q11/Q12 stand. -->
+      <div class="manage-row-c">
+      <div id="manage-uncounted-grid"></div>
+      <!-- ⭐ 26.99955-05 (her ruling 5, recorded at the 26.99955-02
+           sitting: the four numbers show BOTH ways — this card on the
+           front page AND the stats pane behind the tile; shaped by her
+           Part-6 picks, 2026-08-26, approved-as-shown): the four-numbers
+           mini card, beside the last tile group. Empty on purpose:
+           app.js (renderNumbersCard) fills it — the shipped heading
+           reused from ONE source, four short labels each over its own
+           number, her drawn privacy line as the footer. -->
+      <div id="manage-numbers-card"></div>
+      </div>
+    </div>
+    <!-- 23-04: the six labeled sections (D-14), collapsed by default with
+         counts in their headers — the one deliberate, clearly-labeled
+         place excluded things are listed (D-10). Rows in the excluded
+         sections show title + metadata as the recall handle (D-16 as
+         amended at 23-uat); content opens only after the reveal confirm
+         below says open. -->
+
+    <!-- 26.99955-01: the pane-open view — a landing tile opens its section
+         full-width in here; #manage-pane-back is an empty slot app.js
+         fills (the back control — her verdict Q23/Q27 at the 26.99955-05
+         copy sitting kept its shipped wording, so it is no longer
+         provisional). Hidden entirely while the landing shows. -->
+    <div id="manage-pane-view">
+      <div id="manage-pane-back"></div>
+      <!-- ⭐ 26.99955-07 — HER RULING 2 (2026-08-26), VERBATIM: "The small
+           card, as drawn." The librarian keeps her seat while a section is
+           open, and she keeps it as the LEFT-HAND CARD the artboard draws —
+           a framed portrait, a nameplate plaque and a caption line — not
+           the 30x66 bare flame that used to sit in the top-right corner.
+           She was shown both and chose the card, so this ruling SUPERSEDES
+           the literal reading of her earlier "shrinks into the corner"
+           wording (which is why the old comment here is replaced, not kept
+           beside this one — a record that reads two ways is how a ruling
+           gets quietly reversed). ⛔ The card's caption slot SHIPS BLANK:
+           the artboard's line there is not one of her approved strings, and
+           it is recorded as owed to her in 26.99955-07-SUMMARY.md.
+           Element MOVED, never recreated; the id is unchanged and app.js
+           (showManagePane) still fills it. -->
+      <div class="manage-pane-body">
+        <div class="manage-pane-aside">
+          <div id="manage-candle-small"></div>
+        </div>
+        <div class="manage-pane-main">
+      <!-- 23-04: light scale tooling (D-17) — a title search and view-only
+           facet chips that narrow the visible lists; neither ever writes a
+           category filter. app.js fills both in. ⭐ 26.99955-02 (her
+           ruling, 2026-08-25): these live inside an opened section — they
+           act on the section lists, so they moved from the front page
+           into the pane view. Elements moved, never recreated; ids
+           unchanged (their renderers look them up by id). -->
+      <p><input id="manage-search" type="text"></p>
+      <div id="manage-chips"></div>
+    <!-- 26-05 UAT (the owner): the settings-style two-pane. A left rail of
+         section names; ONE pane of content at a time on the right. The
+         section divs below are untouched — the same renderers fill them;
+         the layout only decides which one is on screen. -->
+    <div id="manage-layout">
+      <!-- ⭐ 26.99955-03: #manage-rail MOVED into the ☰ sections overlay
+           at the end of the body — the overlay IS the old list reopened
+           (her "at least make it hideable" fallback), rendered by the
+           untouched renderManageRail from the one MANAGE_PANES roster.
+           Element moved, never recreated; id unchanged. -->
+      <!-- 26.5-03 (D-09): the Phase-23 content controls — filters (the
+           category fences), never show, and hidden (the trigger flag) —
+           are promoted to the FRONT of the pane markup so they sit one
+           click past the desk drawer. Surfacing only, ZERO new
+           capability: the section renderers and their copy are
+           untouched; only the order here and in MANAGE_PANES moved.
+           This reorder applies to both flag states and is the ONE
+           documented intentional delta from Phase-25 manage
+           presentation (SC-1 binds the reading-loop panels and gated
+           open sites; D-09 is a locked user decision layered on
+           manage). -->
+      <div id="manage-panes">
+        <div id="manage-sec-filters"></div>
+        <div id="manage-sec-never"></div>
+        <div id="manage-sec-hidden"></div>
+        <div id="manage-sec-pile"></div>
+        <div id="manage-sec-blessed"></div>
+        <div id="manage-sec-retired"></div>
+        <!-- 24-03: the room section (D-14) — the consolidation row's home:
+             one stored-truth behavior line + the quiet lowercase toggle
+             link, rendered by app.js from store meta only. -->
+        <div id="manage-sec-room"></div>
+        <!-- 26.85-05 (D-04): the tidy-up pane — the "later runs" doorway
+             into the tier-1 filing-label flow (the other doorway is the
+             post-import offer). Empty markup on purpose: app.js
+             (renderCleaningSection) fills it, and fills it with NOTHING at
+             all when the AI tier is absent, so an unavailable tidy-up is
+             absent rather than an error state (D-06 fail-open). -->
+        <div id="manage-sec-cleaning"></div>
+        <!-- 26.96-02 (R5, F9 option C): the private-folder pane — the fence
+             the librarian may never read, finally reachable from settings
+             instead of only from the pre-import disclosure screen. Empty
+             markup on purpose, the same discipline as every container in
+             this block: app.js (renderRosterSection) fills it, and it fills
+             it through the SAME renderer the import screen uses, so the two
+             lists cannot drift apart. -->
+        <div id="manage-sec-roster"></div>
+        <!-- 26.9985 (R-15, her ruling): the set-aside pane — subjects the
+             librarian offered to stop reading, and the door where she names
+             one herself. Directly beside the private-folders fence, its
+             sibling: folders fence PLACES, this fences SUBJECTS. Empty
+             markup on purpose: app.js (renderSubjectsSection) fills it, and
+             every sentence it shows is HERS (server SUBJECT_WORDS,
+             byte-for-byte out of 26.9985-COPY.md). -->
+        <div id="manage-sec-subjects"></div>
+        <!-- ⭐⭐ 26.99955 UAT G-…-01 (her ruling, 2026-08-26): what the
+             librarian noticed. This list used to STREAM DOWN THE FRONT PAGE
+             — her two shelf sentences followed by one full-width card per
+             suggested item, uncapped, growing as a sort found more — and it
+             was the first thing she caught on her walk-through: "this need
+             to be folded into another window, so on the dashboard view,
+             this should be folded like other things for manage your
+             library". Every other group on that page is a framed panel or a
+             tile you open; this was the one surface that was neither, which
+             is exactly what defeated the front page's claim to be scannable.
+             She was offered the two shapes Manage already has and chose the
+             counted tile.
+             ⛔ HER TWO SHELF SENTENCES DID NOT MOVE AND DID NOT CHANGE. The
+             pane is filled by the SAME renderer the ask screen uses
+             (renderLibrarianSuggestions), so the headings, the joyful rows'
+             open behaviour and the receipt rows' `noted` control are the
+             shipped ones rather than a second copy that could drift.
+             ⭐ The tile's own name is HERS, chosen 2026-08-26 from an offered
+             set of three; it is typed exactly once, in MANAGE_PANES.
+             Empty markup on purpose, like every container in this block. -->
+        <div id="manage-sec-noticed"></div>
+        <!-- 26.99955-01: static homes for the containers app.js created
+             at runtime until now (manageStatsBox, librarianSettingsBox
+             and their siblings insert relative to anchor chains). Every
+             creation fn checks $(id) first and simply finds these, so the
+             anchor chains are dead-safe under the new layout. Empty
+             markup on purpose, the same discipline as every container in
+             this block. ⭐ 26.99955-03: the two manage-sec-librarian*
+             containers moved up into #manage-landing's Row A (her
+             option-B ruling — the candle is the landing pane); ids
+             unchanged, found by the same $(id)-first creation fns. -->
+        <div id="manage-sec-memory"></div>
+        <div id="manage-sec-stats"></div>
+        <div id="manage-sec-library"></div>
+        <div id="manage-sec-comments"></div>
+        <div id="manage-sec-reflections"></div>
+        <div id="manage-sec-sources"></div>
+      </div>
+    </div>
+      <!-- ⭐ 26.99955-02 (her ruling, 2026-08-25): the two confirm steps —
+           reveal-hidden and dig-out-retired — live inside an opened
+           section, the thing they act on. Moved from the screen tail into
+           the pane view; ids unchanged. -->
+      <div id="reveal-confirm"></div>
+      <div id="dig-out-confirm"></div>
+        </div><!-- /.manage-pane-main -->
+      </div><!-- /.manage-pane-body -->
+    </div>
+  </section>
+
+  <section id="screen-room" class="screen">
+    <!-- 24.1: the masthead — the Visual House top brought over per
+         the owner's request (2026-07-19): coral pixel title, quiet
+         bilingual sub, dashed rule with the coral diamond, then the
+         beveled toolbar row. Look and entry points only — the buttons
+         reuse existing handlers; nothing new happens on this screen. -->
+    <header class="room-masthead">
+      <h1 class="room-title">The Study Room</h1>
+      <p class="room-sub">a room of your own</p>
+      <div class="room-rule" aria-hidden="true"><span></span><i>&#9670;</i><span></span></div>
+      <div class="room-toolbar">
+        <button type="button" id="room-manage-link" class="btn">&#128218; manage your library</button>
+        <button type="button" id="room-toolbar-arrange" class="btn">&#10021; arrange your room</button>
+      </div>
+    </header>
+    <!-- 24-01: the study-room scene (D-02 blockout-first) — flat token-
+         colored placeholder shapes, dashed outlines, and label chips.
+         Sprites swap in per object later and change art only: hotspot
+         geometry and handlers stay byte-identical. Objects sit still and
+         unmarked; the room only ever responds (D-06). -->
+    <div id="room-scene-wrap" class="room-full-bleed">
+      <div id="room-scene-el" class="room-scene">
+        <div class="room-bg-wall"></div>
+        <div class="room-bg-feature"></div>
+        <div class="room-bg-floor"></div>
+        <img class="room-bg-sprite" src="assets/room/bg.png" alt="">
+        <button type="button" id="room-obj-bookshelf" class="room-object has-sprite"
+          aria-label="bookshelf" data-cls="floor"
+          style="--x:16;--y:56;--w:72;--h:112">
+          <span class="room-blockout" style="background:var(--btn-bg)"></span>
+          <span class="room-label">bookshelf</span>
+          <img src="assets/room/bookshelf.png?v=26.4-08-clean" alt="">
+        </button>
+        <!-- 24-02: the two container objects (D-11) — hidden at rest;
+             app.js shows each iff consolidation is on (true or null =
+             default-on) AND the store holds at least one item of the
+             type in any state. Blockout-first (D-02): the sprite swap
+             changes art only. Tab order stays bookshelf, album
+             (source order). -->
+        <button type="button" id="room-obj-album" class="room-object has-sprite"
+          aria-label="photo album" data-cls="floor"
+          style="--x:140;--y:140;--w:40;--h:28"
+          hidden>
+          <span class="room-blockout" style="background:var(--card)"></span>
+          <span class="room-label">photo album</span>
+          <img src="assets/room/album.png" alt="">
+        </button>
+        <!-- 26.91-04 (D-06, 2026-08-07): THE READING BOOK IS RETIRED. Its
+             button stood here between the album and the desk and was
+             removed whole — the clean-removal method 26.8.1 D-B already ran
+             on this same object, in the direction 26.9-01 reversed. Owner:
+             "the reading book is too redundant, it almost shares the same
+             function as the journal book" and "it is too much for me to
+             read and I feel the easier the better." The bench keeps its
+             cushion and renders EMPTY; that empty bench IS the design (no
+             placeholder, no marker that something used to be here — this is
+             the room state that shipped for every phase before 26.9). The
+             removal commit is recorded in 26.91-04-SUMMARY.md so the
+             verbatim recovery stays available, exactly the way 26.9-01
+             recovered this object from `git show f5dc9ed^:app.js`. -->
+        <!-- 24-03: the desk (D-15) — the blessing flow's home in the
+             fiction; it renders NO counts, stats, or status of any kind
+             (an entry, never a dashboard). The room-note-spot span is
+             the Phase 26 librarian's gift spot, drawn now and kept
+             deliberately empty: zero copy, zero tooltip, zero hotspot —
+             a visible promise, doing nothing this phase (knock-not-barge).
+             Blockout-first (D-02): the sprite swap changes art only, and
+             the desk sprite draws its own note spot (RV-9b), so the span
+             yields via CSS the moment has-sprite lands. -->
+        <button type="button" id="room-obj-desk" class="room-object has-sprite"
+          aria-label="desk" data-cls="floor"
+          style="--x:216;--y:112;--w:120;--h:56">
+          <span class="room-blockout" style="background:var(--btn-bg)"></span>
+          <span class="room-label">desk</span>
+          <span class="room-note-spot"></span>
+          <img src="assets/room/desk.png" alt="">
+        </button>
+        <!-- 26.8-05 (D-15): the blessings notebook — a room object at
+             last: movable in design mode through the shared drag
+             pipeline, move-but-not-remove client-side (the candle's
+             class), seated on the desk's drawn-wood line
+             (y 94 + h 22 = surface 116). Tapping it opens the SAME
+             blessings-notebook station the desk-spot door opens (one
+             station, two doors). notebook.png is the contracted art;
+             decor-books.png is the UI-SPEC pre-declared fallback the
+             app.js ROOM_SPRITE_FALLBACKS table swaps in when the art
+             is absent (art-last, never blocking — a 404 with no swap
+             still shows the blockout beneath, fail-visible). -->
+        <button type="button" id="room-obj-notebook" class="room-object has-sprite"
+          aria-label="the blessings notebook" data-cls="surface"
+          style="--x:264;--y:94;--w:28;--h:22">
+          <span class="room-blockout" style="background:var(--wood-deep)"></span>
+          <span class="room-label">notebook</span>
+          <img src="assets/room/notebook.png" alt="">
+        </button>
+        <!-- 26.999 (her design sitting, 2026-08-25): the card box — the
+             librarian's memory of you, HER spot and HER object (record:
+             26.999-DESIGN-SITTING-2026-08-25.md; art to her reference).
+             Seated on the desk's drawn-wood line (y 88 + h 28 = surface
+             116), left of the notebook. ⛔ In passing it shows NOTHING —
+             no badge, no count, no words (law 3; the sitting's D-22
+             answer): the tap is the only door, and it opens the page
+             over the desk. cardbox.png is contracted codegen art; the
+             blockout beneath is the fail-visible fallback. "card box" as
+             the label is her own noun for it, from the sitting. -->
+        <button type="button" id="room-obj-cardbox" class="room-object has-sprite"
+          aria-label="the librarian's memory of you" data-cls="surface"
+          style="--x:226;--y:88;--w:30;--h:28">
+          <span class="room-blockout" style="background:var(--wood-deep)"></span>
+          <span class="room-label">card box</span>
+          <img src="assets/room/cardbox.png" alt="">
+        </button>
+        <!-- 26.99955-08 (her ruling, 2026-08-26): the pen cup — the ONE
+             door to the activity log, which she ruled off the Manage
+             dashboard ("should not be listed 100% on the manage your
+             library dashboard") and into the room ("Only in the room"),
+             as this object, in this spot: "On the desk, near the candle."
+             Seated on the desk's drawn-wood line (y 94 + h 22 = surface
+             116), immediately right of the candle at 300-310.
+             ⛔ IT CARRIES NO aria-label AND NO room-label, BOTH
+             DELIBERATELY. The name is assigned in app.js from
+             CALL_RECORD_HEAD — her own heading on the page this opens —
+             so a wordless door has exactly ONE naming source, and that
+             source is the one that survives the log leaving Manage
+             (the 4617dd5 lesson, applied at birth this time). A literal
+             here would be a second copy free to drift. The room-label is
+             omitted because .room-object.has-sprite hides it anyway and
+             it would still land in the scene's textContent — a new
+             user-visible word this plan is not permitted to write.
+             ⛔ In passing it shows NOTHING — no badge, no count, no words
+             (law 3): the tap is the whole affordance. pen-cup.png is the
+             shipped 26.9995-04 art; the blockout beneath is the
+             fail-visible fallback. -->
+        <button type="button" id="room-obj-pen-cup" class="room-object has-sprite"
+          data-cls="surface"
+          style="--x:314;--y:94;--w:14;--h:22">
+          <span class="room-blockout" style="background:var(--wood-deep)"></span>
+          <img src="assets/room/pen-cup.png" alt="">
+        </button>
+        <!-- 24-05: office chair — a real-scale sprite (24px/ft) in front of
+             the desk. 26.5-09 UAT F16 (the owner): promoted from fixed scenery
+             to a full arrangeable object, the bench's pattern end-to-end.
+             room-passive because the chair has NO everyday click action —
+             outside design mode it takes no pointer events (the F7 rule: a
+             design-only object must never block a functional one). Floor
+             class, and NOT a surface host — nothing seats ON the chair. -->
+        <button type="button" id="room-obj-chair" class="room-object has-sprite room-passive"
+          aria-label="chair" data-cls="floor"
+          style="--x:250;--y:90;--w:52;--h:78">
+          <span class="room-blockout" style="background:var(--wood-deep)"></span>
+          <span class="room-label">chair</span>
+          <img src="assets/room/chair.png" alt="">
+        </button>
+        <!-- 24-03: decor (D-16) — three independent click-to-animate
+             pieces, LAST in the scene tab order and first on the cut
+             order: each piece is its own button here, its own tokens.css
+             block, and its own two wiring lines in app.js — deleting
+             those three drops it without a trace. A click plays one
+             short placeholder pass; otherwise the pieces sit still. No
+             data logic, no copy; decor clicks are never counted
+             (D-16/D-17). -->
+        <!-- 26.5-03 (D-16): the candle's DEFAULT home is the desk now —
+             the librarian works where you bless. Resting on the desk's
+             drawn-wood line (y 94 + h 22 = surface 116). A stored
+             design-mode position still wins: LAYOUT apply overrides
+             these inline defaults, so only the DEFAULT moves. -->
+        <button type="button" id="room-obj-candle"
+          class="room-object room-decor has-sprite" aria-label="candle"
+          data-cls="surface" style="--x:300;--y:94;--w:10;--h:22">
+          <span class="room-blockout" style="background:var(--card)"></span>
+          <span class="room-label">candle</span>
+          <img src="assets/room/decor-candle.png" alt="">
+        </button>
+        <button type="button" id="room-obj-plant"
+          class="room-object room-decor has-sprite" aria-label="plant"
+          data-cls="floor" style="--x:348;--y:124;--w:26;--h:44">
+          <span class="room-blockout" style="background:var(--green)"></span>
+          <span class="room-label">plant</span>
+          <img src="assets/room/decor-plant.png" alt="">
+        </button>
+        <button type="button" id="room-obj-window"
+          class="room-object room-decor has-sprite" aria-label="window"
+          data-cls="wall" style="--x:124;--y:44;--w:88;--h:88">
+          <span class="room-blockout" style="background:var(--stone)"></span>
+          <span class="room-label">window</span>
+          <img src="assets/room/decor-window.png?v=26.5-06" alt="">
+        </button>
+        <!-- 26.5-06 (SC-3): the bench — the window seat split OUT of the
+             window sprite into its own arrangeable object. A passive
+             surface, deliberately: NO click-to-open, no station (stations
+             are containers of items; the bench just holds things — the
+             candle or decor rest on its drawn cushion). Its cushion top
+             IS app.js SCENE.surfaces[2] (--y:152 = the surface y), so a
+             surface-class drop lands ON the drawn wood. -->
+        <!-- 26.5-09 UAT F7: room-passive — the bench is arrangeable-only
+             (no everyday click action), so outside design mode it takes
+             no pointer events: a design-only object must never block a
+             functional one (its hotspot sat over the album's center and
+             swallowed the click). Inside design mode it is clickable and
+             draggable exactly as before (the tokens.css rule is scoped
+             body:not(.design-mode)). -->
+        <button type="button" id="room-obj-bench" class="room-object has-sprite room-passive"
+          aria-label="bench" data-cls="floorwall"
+          style="--x:124;--y:152;--w:88;--h:16">
+          <span class="room-blockout" style="background:var(--wood-deep)"></span>
+          <span class="room-label">bench</span>
+          <img src="assets/room/bench.png?v=26.5-08b" alt="">
+        </button>
+        <!-- 24.1-03: the 12px arrangement grid (D-03) — visible only in
+             design mode (body.design-mode gates it in tokens.css),
+             pointer-events none, so with the mode off it renders
+             nothing and takes no clicks. -->
+        <div id="design-grid" aria-hidden="true"></div>
+        <!-- 24-01: #room-tint is empty this phase — Phase 25's lighting
+             seam. It renders nothing and takes no clicks (pointer-events
+             none); Phase 25 layers its warm treatment here without
+             touching the scene's render path (D-18). -->
+        <div id="room-tint"></div>
+      </div>
+    </div>
+    <!-- The first-step line — an EMPTY container, filled by app.js behind
+         the escape seam (the album-hint pattern verbatim). It carries one
+         quiet offer while the room holds nothing blessed yet, and renders
+         NOTHING the moment anything is blessed. Never a count, never a
+         checklist, never a time reference (laws 1/3). -->
+    <div id="room-first-step"></div>
+  </section>
+
+  <section id="screen-album" class="screen">
+    <!-- 24-02: the album browse panel (D-11/D-12/D-13) — blessed image
+         items only, oldest saved first; app.js fills the grid and the
+         quiet pile-hint line beneath it. Thumbnails letterbox with
+         object-fit contain — display fit, never crop (law 4). -->
+    <h2>Your photos</h2>
+    <div id="album-grid" class="album-grid"></div>
+    <div id="album-hint"></div>
+  </section>
+
+  <!-- 26.4-01: the whole-vault import + fence-disclosure screen (D-05/D-06,
+       SC3). It renders BEFORE any read of the vault begins. app.js reads
+       meta.fenced_roster and fills #vault-fence-body + #vault-roster-card in
+       plain words; the roster is adjustable HERE (every edit writes through
+       the /api/librarian/roster route so the born-flag stamps the roster she
+       confirmed); the whole-vault (vault-root) import fires ONLY on confirm.
+       No count, no time-gap copy anywhere on this screen (law 3). All DOM
+       writing lives in app.js behind the escape seam — this markup is empty
+       containers only. -->
+  <section id="screen-vault-import" class="screen">
+    <h2>Before the librarian reads anything</h2>
+    <div id="vault-fence-body"></div>
+    <div class="card">
+      <p class="card-title">Kept private</p>
+      <!-- 26.96-02: the host hook, and nothing else. The list, the add
+           field and the add button moved into app.js's renderRosterEditor
+           so the Manage pane and this screen render ONE editor — two hosts
+           cannot share a global id, so those three ids are gone and every
+           control inside is now a class, found through this container. -->
+      <div id="vault-roster-card"></div>
+    </div>
+    <div class="card">
+      <label for="vault-path-input">Your vault folder. The librarian brings
+      your whole vault in and leaves the folders above unread.</label>
+      <input id="vault-path-input" type="text"
+             placeholder="for example: ~/Documents/MyVault">
+      <p><button id="btn-vault-confirm" class="btn" type="button">bring my
+      vault in</button></p>
+      <div id="vault-import-report"></div>
+    </div>
+  </section>
+
+  <!-- 26.4-03: the desk proposal stack (D-01/D-24, law 3) — the candle
+       opens this panel when a connection proposal waits. ONE proposal at a
+       time: no list, no count, no "N left". The sticky Allow/Pass bar (H9)
+       sits ABOVE the content, mirroring #reaction-bar / #blessing-controls,
+       and the connection + verbatim connected material scroll in their own
+       region below inside the shipped .desk-note-card frame. Only
+       joyful/connection verdicts reach here; receipts/heavy/unsure stay in
+       the Manage notebook (D-03). All DOM writing lives in app.js behind
+       the escape seam — this markup is empty containers only. -->
+  <section id="screen-proposals" class="screen">
+    <div id="proposals-bar"></div>
+    <div id="proposals-stack"></div>
+  </section>
+
+  <!-- 24-01: overlay chrome for the room-home presentation mode (D-08) —
+       the scrim dims the still room beneath the one open panel, and the
+       fixed link above the panel always exits fully to the room. Both
+       stay hidden until a panel opens from the room. -->
+  <div id="room-scrim" hidden></div>
+  <p id="room-panel-back-wrap" hidden><button type="button" id="room-panel-back">back to the room</button></p>
+
+  <!-- 26.5-02 (D-06): the station layer — an integer-scaled workspace
+       sub-scene BETWEEN room and spread: the room's own 384×216
+       internal-unit canvas at the largest fitting integer scale, raised
+       over the dimmed room. Hidden until app.js raises it; with the
+       diegetic flag off this markup stays inert. All DOM writing lives
+       in app.js, node-by-node — this is an empty container only. The
+       overlay sits UNDER the spread in z-order, so an open spread dims
+       the station beneath it and one pop lands back on it.
+       26.7-02 (D-13/D-15): the reflection session's calm-paper surface
+       lives INSIDE #station-scene too — app.js wakes the desk station's
+       reserved #desk-spot-session span for a live session (thinking
+       label, warm nothing-new line, the paragraph reveal) and tapping
+       the finished paper opens the full reading spread through the view
+       stack above; every string enters through the escape seams.
+       26.7-03 (D-15/D-28): the chat-refine surface shares that SAME
+       spot — an add-details affordance under the paper opens quiet
+       script lines + one input beside/below it, all app.js-built inside
+       the station scene: never a popup, never a screen change, never a
+       second overlay system.
+       26.7-04 (D-28/D-16): the three-path gate renders under the paper
+       in that same spot — keep it / add details / let it go, the ONLY
+       exit from a proposed reflection. A keep drives the close route,
+       fades the paper (the pre-declared D-16 cut), and the new spine
+       paints in the room scene through the shipped shelf loader; a
+       let-it-go settles the paper away with no copy at all. All
+       app.js-built; this markup stays an empty container.
+       26.7-05 (D-03/D-14): a held conversation's ONE offer paints at
+       that same spot before anything new — the pinned line plus two
+       quiet doors; resume re-opens paper and chat from the server's
+       own state, let-it-go proceeds into the fresh beat, and the
+       server spends the offer atomically before it ever renders.
+       While the librarian reads or writes, the candle carries the
+       thinking presentation (the optional strip, else the glow cut) —
+       chrome only, never a change to the candle's body. All
+       app.js-built; this markup stays an empty container. -->
+  <div id="station-overlay" hidden>
+    <button type="button" id="station-back" class="btn" aria-label="back">&#x2190;</button>
+    <div id="station-scene" class="station-scene"></div>
+  </div>
+
+  <!-- 26.5-01 (D-01/D-02/D-03/D-04): the in-scene reading spread — a
+       viewport-filling overlay: pixel frame chrome (skin art only; one
+       shared interior rect) around ONE normal-DOM scroll region, the
+       room dimmed behind. Hidden until app.js raises it; with the
+       diegetic flag off this markup stays inert and the Phase-25 reader
+       above is the only present path. All DOM writing lives in app.js
+       behind the escape seam — these are empty containers only. -->
+  <div id="spread-overlay" hidden>
+    <div id="spread-stage">
+      <img id="spread-frame" src="assets/room/spread-frame-paper.png?v=26.5-08b" alt="">
+      <button type="button" id="spread-back" class="btn" aria-label="back">&#x2190;</button>
+      <h2 id="spread-title"></h2>
+      <div id="spread-scroll">
+        <!-- VERBATIM LAW (SRM-03): spread-content receives content only
+             through the renderMarkdown seam or a plain escaped img tag —
+             no rewording, no filters, no decoration, no CSS transitions
+             or animations on the content itself. -->
+        <div id="spread-content"></div>
+        <!-- 26.4-05 / D-03: the "your notes" layer stays INSIDE the
+             scroll, below the verbatim content — the user's margin,
+             never mixed into the content. -->
+        <div id="spread-comments"></div>
+      </div>
+      <!-- D-03: the verdict ribbon is a SIBLING of the scroll region,
+           pinned over the frame's bottom edge — reachable mid-scroll in
+           the longest transcript, it can never scroll away. -->
+      <div id="spread-ribbon"></div>
+    </div>
+  </div>
+
+  <!-- 26.99955-03 (her words: "at least make this panel can be hidden";
+       A2 confirmed at 26.99955-02 — the full section list appears ONLY
+       behind the sections button): the ☰ overlay, the #spread-overlay
+       sibling pattern. It contains #manage-rail ITSELF — the overlay IS
+       the old list reopened, rendered by the untouched renderManageRail
+       from the one MANAGE_PANES roster (same order, same cleaning
+       conditional, same counts, same aria-current) — never a second
+       hand-kept list. Hidden by default; every dismiss path (scrim,
+       close control, Escape, picking a row) funnels through
+       closeSectionsOverlay in app.js. ⭐ 26.99955-05 (her verdict Q26,
+       2026-08-26): the close control STAYS the back arrow — she was
+       offered the ✕ and kept this, so the ✋ flag is off. It goes on
+       reusing the shipped back affordance byte-for-byte (class, glyph,
+       aria-label): one close-language, no new word for it. -->
+  <div id="manage-sections-overlay" hidden>
+    <div id="manage-sections-panel">
+      <button type="button" id="manage-sections-close" class="btn" aria-label="back">&#x2190;</button>
+      <nav id="manage-rail"></nav>
+    </div>
+  </div>
+
+  <!-- 24.1-03: the design bar (D-01/D-07) — the mode-only exit chrome:
+       undo / redo and the one exit button, hidden at rest and shown by
+       body.design-mode in tokens.css. The exit copy is pinned
+       byte-exactly in Suite 4. -->
+  <div id="design-bar" hidden><button type="button" id="design-undo" class="btn" aria-label="undo">&#x21B6;</button><button type="button" id="design-redo" class="btn" aria-label="redo">&#x21B7;</button><button type="button" id="design-done" class="btn">done arranging</button></div>
+
+  <!-- 24.1-04: the accessory catalog (D-05) — a right-dock aside, closed
+       outside design mode by tokens.css (a translateX state, no motion)
+       and populated by app.js on mode entry. Decor entries ONLY ever
+       render here: the four functional objects are absent from the
+       roster object itself — a structural fence, re-enforced by the
+       server validator. The ghost img follows a card drag and renders
+       nothing at rest. -->
+  <aside id="catalog-panel" aria-label="accessory catalog"><div id="catalog-head"><span id="catalog-title">accessories</span><button type="button" class="btn" id="cat-duplicate">duplicate last</button></div><div id="cat-grid"></div><p id="catalog-hint">drag a card into the room · &#215; removes · done arranging closes</p></aside>
+  <img id="cat-drag-ghost" alt="" hidden>
+
+  <!-- 26.6-03 (SC1): the first-run onboarding sequence — EMPTY containers,
+       filled entirely by app.js behind the escapeHtml/escapeAttr seam (no
+       inline copy, no sink tokens here). The gate in initSetup routes a
+       fresh/indeterminate store into #screen-welcome instead of the bare
+       #screen-setup form.
+       ⚠ 26.93-09: FOUR sections now, and there were five. The removed one
+       held a check that asked a program on this machine whether it was
+       signed in — the librarian no longer reaches a model that way, so the
+       step could only ever have reported a working room as broken. It went
+       together with its roster name and its six functions in app.js: a
+       section with no step name, or a step name with no section, is a blank
+       screen a stranger cannot leave. -->
+  <section id="screen-welcome" class="screen"></section>
+  <section id="screen-name-candle" class="screen"></section>
+  <section id="screen-sources" class="screen"></section>
+  <section id="screen-expect" class="screen"></section>
+
+</main>
+
+<!-- Script order matters: marked, then purify, then core.js, then app.js.
+     All paths are local relative paths — no CDN anywhere (D-01/D-03). -->
+<script src="vendor/marked.umd.js"></script>
+<script src="vendor/purify.min.js"></script>
+<!-- ⚠ THE RULE THESE TWO OBEY, restated because it has been got wrong twice:
+     the string only has to CHANGE, and it must not be a value that has
+     ALREADY been served against a different file. That second half is why
+     app.js reads `-32a` and not `-32`.
+     ⚠ MEASURED 2026-08-15 BY THE 26.95-32 EXECUTOR: this file already
+     carried `app.js?v=26.95-32` BEFORE plan 32 changed a byte of app.js.
+     Leaving it at `-32` would therefore hand a browser that had already
+     fetched app.js under that key the OLD file — the stale-cache defect
+     standing prohibition 9 exists for, and the one that bit this project
+     once already. `-32a` is a value nothing has been served under, on the
+     same precedent plan 30 set when it took `-30a`.
+     ⚠ core.js is NOT touched by plan 32, so its string deliberately does
+     not move: a bump with no change teaches the next reader that these
+     strings drift on their own.
+     ⚠ 26.95-33 moves app.js on to `-33`. That value has been served against
+     nothing: the parallel counter that already spent `26.95-01`…`-16` has
+     not reached it, and plans 30–32 took `-30a`, `-31` and `-32a`. core.js
+     is untouched by plan 33 and its string stays where plan 31 left it, for
+     the reason the paragraph above gives.
+     ⚠ 26.95-34 moves app.js on to `-34`. That value has been served against
+     nothing: the parallel counter that already spent `26.95-01`…`-16` has not
+     reached it, and plans 30–33 took `-30a`, `-31`, `-32a` and `-33`. core.js
+     is untouched by plan 34 — the blessing batch size drives core's OWN
+     DEFAULTS.BLESSING_COUNT through an opt app.js passes, and not one byte of
+     core.js moves — so its string stays where plan 31 left it, for the reason
+     the paragraph above gives.
+     ⚠ 26.97-08 moves app.js on to `26.97-08` — the seeded vault-folder
+     picker changes app.js, so the string moves in the SAME commit. core.js is
+     untouched by plan 08 (the picker routes every folder name through the
+     escaping core it already ships) and its string stays put, for the reason
+     the paragraphs above give.
+     ⚠ 26.97-09 moves app.js on to `26.97-09`. The candle now brings in what
+     is new in her vault too, and carries each source's own kept-out folders
+     to the collect — a stale app.js here would be a room that reaches the
+     vault with the wrong list, or with none, which is the one defect this
+     plan exists to close. core.js is untouched by plan 09 and its string
+     stays put. -->
+<script src="core.js?v=26.95-37"></script>
+<script src="app.js?v=26.996-11-1"></script>
+</body>
+</html>

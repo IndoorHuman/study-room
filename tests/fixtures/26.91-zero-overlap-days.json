@@ -1,0 +1,57 @@
+{
+  "_why": "On the owner's real library 07-27 and 07-30 are BOTH import days and lit days, so a gate of the form 'the trace renders on at least one page' PASSES TODAY under the superseded design and is degenerate; this fixture's import days and blessing days do not intersect at all, so a gate built on it cannot pass by accident.",
+
+  "_shape": "Days are stored as [year, month, day, hour] and converted by the test with the shipped local-noon idiom (new Date(y, m-1, d, h)), NEVER as epoch ms: a hardcoded epoch would name a different local calendar day in a different machine timezone, which is the one thing every day-bucketing assertion in this suite depends on.",
+
+  "_synthetic": "Contains no real data. Every id, title, folder and body here is invented for this file. The owner's library is neither read nor written by anything that uses it.",
+
+  "zero_overlap": {
+    "_disjointness": "import days {07/19, 07/26, 07/15} and blessing days {07/30, 06/03} share nothing. The test asserts this property itself, because a later edit could quietly reintroduce an overlap and hollow out every gate built on the fixture.",
+
+    "declared_import_days": [[2026, 7, 19], [2026, 7, 26], [2026, 7, 15]],
+    "declared_blessing_days": [[2026, 7, 30], [2026, 6, 3]],
+
+    "_import_only_day_with_many": [2026, 7, 19],
+    "_import_only_day_with_exactly_one": [2026, 7, 26],
+    "_import_only_day_all_fenced": [2026, 7, 15],
+    "_lit_only_days": [[2026, 7, 30], [2026, 6, 3]],
+
+    "items": {
+      "zo-a1": { "id": "zo-a1", "title": "a pressed leaf", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY zo-a1", "folder": "Letters", "source": "folder-drop", "at": [2026, 7, 19, 9] },
+      "zo-a2": { "id": "zo-a2", "title": "a shopping list", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY zo-a2", "folder": "Letters", "source": "folder-drop", "at": [2026, 7, 19, 11] },
+      "zo-a3": { "id": "zo-a3", "title": "a window in the rain", "type": "image", "state": "blessed", "body": "SYNTHETIC BODY zo-a3", "folder": "Sketches", "source": "folder-drop", "at": [2026, 7, 19, 13] },
+      "zo-a4": { "id": "zo-a4", "title": "a half-written postcard", "type": "text", "state": "unseen", "body": "SYNTHETIC BODY zo-a4", "folder": "Letters", "source": "folder-drop", "at": [2026, 7, 19, 15] },
+      "zo-a5": { "id": "zo-a5", "title": "a doorway", "type": "image", "state": "blessed", "body": "SYNTHETIC BODY zo-a5", "folder": "Sketches", "source": "folder-drop", "at": [2026, 7, 19, 17] },
+
+      "zo-b1": { "id": "zo-b1", "title": "one recipe card", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY zo-b1", "folder": "Recipes", "source": "folder-drop", "at": [2026, 7, 26, 12] },
+
+      "zo-f1": { "id": "zo-f1", "title": "a fenced arrival", "type": "text", "state": "never_show", "body": "SYNTHETIC BODY zo-f1", "folder": "Kept Aside", "source": "folder-drop", "at": [2026, 7, 15, 10] },
+      "zo-f2": { "id": "zo-f2", "title": "another fenced arrival", "type": "image", "state": "blessed", "trigger": true, "body": "SYNTHETIC BODY zo-f2", "folder": "Kept Aside", "source": "folder-drop", "at": [2026, 7, 15, 14] },
+
+      "zo-l1": { "id": "zo-l1", "title": "the first thing she welcomed", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY zo-l1" },
+      "zo-l2": { "id": "zo-l2", "title": "the second thing she welcomed", "type": "image", "state": "blessed", "body": "SYNTHETIC BODY zo-l2" },
+      "zo-l3": { "id": "zo-l3", "title": "something from june", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY zo-l3" }
+    },
+
+    "blessings": [
+      { "item_id": "zo-l1", "at": [2026, 7, 30, 10], "why": "it made the room quieter" },
+      { "item_id": "zo-l2", "at": [2026, 7, 30, 16], "why": "the light in it" },
+      { "item_id": "zo-l3", "at": [2026, 6, 3, 12], "why": "a good afternoon" }
+    ]
+  },
+
+  "adjacency": {
+    "_why": "A day that is BOTH an import day and a lit day, kept in its OWN section so the zero-overlap section above stays genuinely zero-overlap. Two of the owner's seven real import days are exactly this, so the collapse-to-one-entry case is driven over a fixture that contains one rather than reasoned about.",
+
+    "declared_both_day": [2026, 8, 2],
+
+    "items": {
+      "ad-x1": { "id": "ad-x1", "title": "arrived and welcomed", "type": "text", "state": "blessed", "body": "SYNTHETIC BODY ad-x1", "folder": "Recipes", "source": "obsidian-vault", "at": [2026, 8, 2, 9] },
+      "ad-x2": { "id": "ad-x2", "title": "arrived the same day", "type": "image", "state": "blessed", "body": "SYNTHETIC BODY ad-x2", "folder": "Sketches", "source": "obsidian-vault", "at": [2026, 8, 2, 15] }
+    },
+
+    "blessings": [
+      { "item_id": "ad-x1", "at": [2026, 8, 2, 20], "why": "welcomed on the day it arrived" }
+    ]
+  }
+}

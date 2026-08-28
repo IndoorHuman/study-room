@@ -1,0 +1,41 @@
+# The Study Room
+
+thank you for using this app I have built, it is an open source app, which it means you have 100% freedom to change it and run it however you like but I cannot provide any kind of support
+
+<!-- BEGIN UPDATE SECTION -->
+
+## Update
+
+The app never checks online for updates. When a newer release exists, download
+it and replace the app folder — your library folder stays unchanged.
+
+P26-08-28
+
+<!-- OWNER_COPY_UPDATE_WHATS_NEW -->
+Updates replace the app folder only. Your library stays in its own folder, outside the app.
+
+<!-- OWNER_COPY_UPDATE_DOWNLOAD -->
+Download the latest release from GitHub and unzip it.
+
+<!-- OWNER_COPY_UPDATE_STEPS -->
+1. Quit the Study Room (`Ctrl+C` in the terminal running `python3 server.py`).
+2. Replace the app folder (not your library folder):
+
+   ```bash
+   python3 tools/update_room.py --source ~/Downloads/study-room --dest ~/study-room
+   ```
+
+3. Start again: `python3 server.py`
+
+See **`UPDATE-GUIDE.md`** for the full walkthrough, going back, and the
+optional coding-agent path (works with any AI tool — not Cursor-specific).
+
+<!-- OWNER_COPY_UPDATE_REPLACE_WARNING -->
+Only replace the app folder. Do not delete or move your library folder.
+
+<!-- OWNER_COPY_UPDATE_GOING_BACK -->
+If something goes wrong, quit and open your backup folder
+(`study-room.update-backup-…`) or the previous app folder. Your library is
+still where you left it.
+
+<!-- END UPDATE SECTION -->

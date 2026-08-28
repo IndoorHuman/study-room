@@ -1,0 +1,29 @@
+# user data — never committed (local-first promise)
+data/
+.studyroom/
+*.local.json
+stats*.json
+
+# measurement scratch — never committed, and the reason is not tidiness.
+# `.scratch/` holds the wayfinder measurement runs, and those hold the owner's
+# real material: 124 MB of her photographs under wayfinder-42/thumbs/, absolute
+# /Users/ paths in every sample and fingerprint file, and OCR of her own notes.
+# stage_public.py stages from `git ls-files`, so until 2026-08-13 the only thing
+# keeping this off the public repo was that nobody had run `git add -A` — the
+# directory was untracked but NOT ignored. Worse, the DENY gate reads text only
+# (it skips on UnicodeDecodeError), so a paths file would have failed loudly
+# while the photographs passed silently. Ignoring it is what makes the stager's
+# tracked-files-only rule an actual guarantee instead of an accident.
+# See wayfinder ticket #49 section 5.
+.scratch/
+
+# environments / deps
+node_modules/
+__pycache__/
+.venv/
+.env
+
+# OS noise
+.DS_Store
+tests/fixtures/album-uat-src/
+tests/fixtures/album-uat-library/

@@ -1,0 +1,180 @@
+{
+ "_about": [
+  "A small SYNTHETIC library for the screenshot re-derivation (D-07) and the",
+  "fence (V12). Every id, every dimension and every word of text here was",
+  "invented for this file. Nothing from ~/StudyRoom appears in it.",
+  "",
+  "`fmt`/`w`/`h`/`model` are a RECIPE the suite turns into header bytes: the",
+  "suite writes a PNG signature + IHDR, or a JPEG SOF0 (plus an APP1/Exif",
+  "IFD0 carrying tag 0x0110 when `model` is set). Storing built binaries",
+  "instead would hide the one thing these cases are about.",
+  "",
+  "`class` is the assertion this row exists to carry, in words, so a failure",
+  "names the case rather than an id.",
+  "",
+  "TEST 1 = no TIFF camera `Model` AND (w,h) on the exact device-screen table.",
+  "TEST 2 = Vision's own `screenshot` label present in the cache entry themes.",
+  "The re-derivation is their UNION."
+ ],
+ "expected": {
+  "eligible": 8,
+  "fenced": 5,
+  "test1": 6,
+  "test2": 6,
+  "both": 5,
+  "test1_only": 1,
+  "test2_only": 1,
+  "union": 7,
+  "added": 6,
+  "removed": 1
+ },
+ "items": [
+  {
+   "id": "s101",
+   "class": "test 1 AND test 2 — a plain screenshot at an exact screen size",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "png", "w": 1179, "h": 2556, "model": null,
+   "themes": ["screenshot", "text"],
+   "tags": ["screenshots"],
+   "created_ms": 1700000200000,
+   "text": "9:41 LTE 100% Settings General About Name Study Room Software Version 26.5.1 Model Number synthetic fixture row, not a real device"
+  },
+  {
+   "id": "s102",
+   "class": "TEST 1 ONLY — exact screen size, no camera model, and Vision did not label it a screenshot",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 828, "h": 1792, "model": null,
+   "themes": ["text", "document"],
+   "tags": [],
+   "created_ms": 1700000400000,
+   "text": "8:15 5G 74% a long enough page of invented words that the clean predicate passes it comfortably"
+  },
+  {
+   "id": "s103",
+   "class": "TEST 2 ONLY — screenshot dimensions but a real camera Model, so test 1 refuses it and Vision's own label rescues it",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 1179, "h": 2556, "model": "iPhone 15 Pro",
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000600000,
+   "text": "10:02 Wi-Fi 63% another invented page of words, long enough that a clean succeeds on it"
+  },
+  {
+   "id": "s104",
+   "class": "THE FALSE POSITIVE — carries the screenshots tag today, is in neither test, and the pass must REMOVE the tag",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 4032, "h": 3024, "model": "iPhone 6s",
+   "themes": ["outdoor", "landscape"],
+   "tags": ["screenshots"],
+   "created_ms": 1700001000000,
+   "text": ""
+  },
+  {
+   "id": "s105",
+   "class": "test 1 AND test 2 — the REVERSED orientation of a screen size, which the table must cover",
+   "state": "blessed", "trigger": false, "type": "image",
+   "fmt": "png", "w": 2556, "h": 1179, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000800000,
+   "text": "7:30 a landscape capture with plenty of invented words on it, well past thirty"
+  },
+  {
+   "id": "s106",
+   "class": "THE SUB-30 SCREENSHOT — in the union, but its clean fails, so it yields no note and stays a picture. Also the first shot of the burst.",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 828, "h": 1792, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000000000,
+   "text": "9:41 LTE 100% Done"
+  },
+  {
+   "id": "s107",
+   "class": "burst member — 12 s after s106",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 828, "h": 1792, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000012000,
+   "text": "9:41 LTE 100% the second shot in the burst, carrying enough invented words to clean"
+  },
+  {
+   "id": "s108",
+   "class": "burst member — 13 s after s107, so it joins s106 only TRANSITIVELY (25 s apart)",
+   "state": "unseen", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 828, "h": 1792, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000025000,
+   "text": "9:41 LTE 100% the third shot in the burst, also carrying enough invented words to clean"
+  },
+
+  {
+   "id": "f201",
+   "class": "FENCED never_show — a screenshot by both tests, and the pass must not look at it, not count it, and not touch its tag",
+   "state": "never_show", "trigger": false, "type": "image",
+   "fmt": "png", "w": 1179, "h": 2556, "model": null,
+   "themes": ["screenshot"],
+   "tags": ["screenshots"],
+   "created_ms": 1700000050000,
+   "text": ""
+  },
+  {
+   "id": "f202",
+   "class": "FENCED retired",
+   "state": "retired", "trigger": false, "type": "image",
+   "fmt": "jpeg", "w": 828, "h": 1792, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000060000,
+   "text": ""
+  },
+  {
+   "id": "f203",
+   "class": "FENCED trigger overlay",
+   "state": "blessed", "trigger": true, "type": "image",
+   "fmt": "png", "w": 750, "h": 1334, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000070000,
+   "text": ""
+  },
+  {
+   "id": "f204",
+   "class": "FENCED unknown state — fail-closed, the fifth class a hand-rolled four-class copy would admit",
+   "state": "wobbly", "trigger": false, "type": "image",
+   "fmt": "png", "w": 1179, "h": 2556, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000080000,
+   "text": ""
+  },
+  {
+   "id": "f205",
+   "class": "FENCED keys-file path class — origin_path is filled in by the suite from study_lib.keys_file_path()",
+   "state": "blessed", "trigger": false, "type": "image",
+   "fmt": "png", "w": 1179, "h": 2556, "model": null,
+   "themes": ["screenshot"],
+   "tags": [],
+   "created_ms": 1700000090000,
+   "origin": "keys_file",
+   "text": ""
+  },
+
+  {
+   "id": "n301",
+   "class": "NOT A PHOTOGRAPH — a note. The type filter runs first, so it never enters any count at all.",
+   "state": "blessed", "trigger": false, "type": "text",
+   "fmt": "md", "w": 0, "h": 0, "model": null,
+   "themes": [],
+   "tags": [],
+   "created_ms": 1700000100000,
+   "text": ""
+  }
+ ],
+ "burst": {
+  "_about": "The one known burst in this fixture: 12 s then 13 s, so s106 and s108 are 25 s apart and join only TRANSITIVELY.",
+  "members": ["s106", "s107", "s108"]
+ }
+}

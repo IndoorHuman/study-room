@@ -1,0 +1,60 @@
+{
+  "files": [
+    "items.json",
+    "settings.json"
+  ],
+  "store_keys": [
+    "schema_version",
+    "meta",
+    "items"
+  ],
+  "meta_keys": [
+    "library_root",
+    "consolidation",
+    "habit_anchor",
+    "habit_anchor_asked",
+    "cycle",
+    "current_shelf",
+    "last_import_report",
+    "filters",
+    "cover_offers",
+    "current_cover",
+    "incidents",
+    "room_entries",
+    "object_opens",
+    "last_entry_ms",
+    "librarian_enabled",
+    "last_visit_ms",
+    "fenced_roster",
+    "sync_comments_enabled",
+    "librarian_name",
+    "onboarding_complete",
+    "last_reflection_ms",
+    "reflection_writeback_enabled",
+    "cleaning_enabled",
+    "voice_model",
+    "blessing_batch_size",
+    "connected_sources"
+  ],
+  "item_keys": [
+    "id",
+    "type",
+    "state",
+    "title",
+    "library_path",
+    "year",
+    "folder",
+    "tags",
+    "reflects",
+    "created_ms",
+    "saved_ms",
+    "last_opened_ms",
+    "source"
+  ],
+  "settings_keys": [
+    "fills",
+    "bases",
+    "timeouts",
+    "compat_bank_note"
+  ]
+}

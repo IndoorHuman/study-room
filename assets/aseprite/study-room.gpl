@@ -1,0 +1,27 @@
+GIMP Palette
+Name: study-room
+Columns: 7
+#
+# The Study Room sprite palette.
+# Every sprite in this set draws from these and nothing else.
+#
+# !! OWNER RULING 2026-08-06: the outline colour is 2c2823 (--ink), per
+# !! SPRITES.md section 2, which stands binding. 4a3a2c is REJECTED as an
+# !! outline and is NOT an approved sprite colour. The live palette is
+# !! therefore 13, not 14. The 4a3a2c row below is kept only so existing
+# !! non-conforming art (assets/aseprite/pixel-build/png/, all 33 files)
+# !! still round-trips; do not draw new work with it.
+238 234 225	eeeae1 paper
+220 213 200	dcd5c8 paper-shadow
+251 247 238	fbf7ee card / highlight
+224 199 154	e0c79a wood light (top-left lit edges)
+205 168 110	cda86e wood base (frame + shelf boards)
+168 128 79	a8804f wood deep (undersides, lower-right)
+183 178 168	b7b2a8 stone / pale spines
+79 123 67	4f7b43 green (feature wall + foliage)
+60 98 52	3c6234 green deep
+181 98 58	b5623a clay / rust spines
+232 80 58	e8503a coral accent (rare, <=4px)
+85 80 71	555047 ink-soft / dark spines
+74 58 44	4a3a2c REJECTED 2026-08-06 - do not use (was proposed outline)
+44 40 35	2c2823 ink (darkest darks) + THE SPRITE OUTLINE

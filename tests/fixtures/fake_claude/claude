@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""fake claude — the hermetic test stand-in for the real CLI (26-01).
+
+Prepended to PATH by the smoke suite (the 25-03 shim precedent, applied at
+the PATH seam) so every librarian test runs with no network and no key.
+
+Behavior:
+  * `claude --version`  -> prints a version at the librarian's floor and
+                           exits 0 (the availability probe passes), before
+                           any stdin read or logging.
+  * anything else       -> records {"argv", "stdin", "env_keys"} as JSON to
+                           $FAKE_CLAUDE_LOG (when set), then prints the
+                           canned --output-format json envelope.
+
+Toggles (all via environment, all optional):
+  FAKE_CLAUDE_FAIL=1        -> exit 2 with one stderr line (the failure
+                               register test)
+  FAKE_CLAUDE_ROGUE_ID=<id> -> the envelope carries one verdict for that id
+                               (26-02's unknown-id drop test)
+  FAKE_CLAUDE_COST=<float>  -> total_cost_usd in the envelope (26-02's
+                               cost tally tests)
+  FAKE_CLAUDE_SLOW=<secs>   -> sleep before answering (26-02's progress
+                               tests)
+  FAKE_CLAUDE_NOTE=<text>   -> the envelope's structured_output becomes a
+                               note object {note, question, topic} with
+                               this canned note text (26-03's gift tests)
+  FAKE_CLAUDE_QUESTION=<q>  -> the note object carries this question
+                               (else question/topic are null)
+  FAKE_CLAUDE_TOPIC=<t>     -> the note object's topic (else null)
+  FAKE_CLAUDE_CONNECTIONS=<json> -> the envelope's structured_output becomes
+                               a connection object {connections:[{title,
+                               connected_ids, why}]} parsed from this JSON
+                               array (26.4-02's proposal + post-check tests)
+  FAKE_CLAUDE_REFLECTION=<json> -> the envelope's structured_output becomes
+                               a reflection object {reflection, name,
+                               said, coda} parsed from this JSON object —
+                               26.995-06 (D-05): NO question field; a
+                               "said" key rides through unchanged, like
+                               "whys" below —
+                               the 26.7-01 session-contract shape
+                               (REFLECTION_SCHEMA_JSON). 26.8-03: a
+                               "whys" key in the JSON rides through
+                               UNCHANGED (the optional whys — a LIST of
+                               {id, reason} pairs since #68 ruling 1,
+                               which is what the providers accept);
+                               absent = omitted (the stub never invents
+                               an empty one). Seeding ids the server
+                               never requested is the deliberate
+                               strip-unrequested probe — no separate
+                               env name (the choke point's child-env
+                               whitelist carries this one).
+  FAKE_CLAUDE_REFLECTION_BAD=1 -> the envelope's structured_output is a
+                               schema-VIOLATING object (no 'reflection'
+                               field) for validate_reflection's
+                               fail-closed tests; wins over
+                               FAKE_CLAUDE_REFLECTION when both are set
+  FAKE_CLAUDE_REFLECTION_ECHO=1 -> the reflection envelope is built by
+                               ECHOING the handed stdin: every user chat
+                               line in the per-turn doc is quoted back
+                               VERBATIM into the revised essay and the
+                               coda (26.7-03 — verbatim survival is
+                               assertable hermetically; her bytes are the
+                               contract, no normalization anywhere).
+                               26.995-06 (D-05): FAKE_CLAUDE_QUESTION no
+                               longer rides the reflection envelope — that
+                               field is gone from the wire. BAD wins over
+                               ECHO; ECHO wins over FAKE_CLAUDE_REFLECTION
+                               — EXCEPT a "whys" key inside
+                               FAKE_CLAUDE_REFLECTION, which 26.8-03
+                               attaches to the echo envelope too (the
+                               whys pass-through must hold on BOTH
+                               reflection-shaped paths)
+  FAKE_CLAUDE_LABELS=<json> -> the envelope's structured_output becomes a
+                               tier-1 cleaning label object
+                               {labels:[{id, room, tags, type, unsure}]}
+                               parsed from this JSON ARRAY (the
+                               CLEAN_SCHEMA_JSON shape, 26.85-03). An
+                               unparseable or non-array value answers an
+                               empty list. Seeding an id the server never
+                               sent is the deliberate hallucinated-id
+                               probe — the batch-membership drop is
+                               server-side, so no separate env name is
+                               needed. Ranks with the other shape
+                               toggles: BAD > ECHO > REFLECTION >
+                               CONNECTIONS > LABELS > NOTE/QUESTION >
+                               verdicts
+
+NOTE: the orchestrator must `chmod +x` this file after checkout.
+"""
+import json
+import os
+import sys
+import time
+
+
+def main():
+    argv = sys.argv[1:]
+    if "--version" in argv:
+        # the probe path: answer like the real CLI, touch nothing else
+        print("2.1.215 (Claude Code)")
+        return 0
+    stdin_text = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+    log = os.environ.get("FAKE_CLAUDE_LOG")
+    if log:
+        rec = {"argv": argv, "stdin": stdin_text,
+               "env_keys": sorted(os.environ.keys())}
+        with open(log, "w", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False))
+    slow = os.environ.get("FAKE_CLAUDE_SLOW")
+    if slow:
+        time.sleep(float(slow))
+    if os.environ.get("FAKE_CLAUDE_FAIL") == "1":
+        sys.stderr.write("fake claude: forced failure for the "
+                         "error-register test\n")
+        return 2
+    cost = float(os.environ.get("FAKE_CLAUDE_COST", "0"))
+    connections = os.environ.get("FAKE_CLAUDE_CONNECTIONS")
+    labels = os.environ.get("FAKE_CLAUDE_LABELS")
+    note = os.environ.get("FAKE_CLAUDE_NOTE")
+    question = os.environ.get("FAKE_CLAUDE_QUESTION")
+    reflection = os.environ.get("FAKE_CLAUDE_REFLECTION")
+    reflection_bad = os.environ.get("FAKE_CLAUDE_REFLECTION_BAD")
+    if reflection_bad == "1":
+        # 26.7-01: a schema-violating envelope — no 'reflection' field,
+        # a stray extra key — for the validator's fail-closed tests
+        structured = {"not_a_reflection": "this shape must be rejected",
+                      "extra": True}
+    elif os.environ.get("FAKE_CLAUDE_REFLECTION_ECHO") == "1":
+        # 26.7-03: echo mode — quote every user chat line from the handed
+        # per-turn doc back into the revised essay + coda, byte-verbatim
+        # (ASCII, CJK, and composed/decomposed accents alike: the strings
+        # ride exactly as handed, no normalization). The padding keeps the
+        # essay over the server's length floor. 26.995-06 (D-05): the
+        # question field is gone, and the dismissed-topic screen now reads
+        # the ESSAY itself, so that path is driven through the reflection
+        # rather than through a separate toggle.
+        try:
+            doc = json.loads(stdin_text)
+        except ValueError:
+            doc = {}
+        chat = doc.get("chat") if isinstance(doc, dict) else []
+        said = [str(t.get("text"))
+                for t in (chat if isinstance(chat, list) else [])
+                if isinstance(t, dict) and t.get("who") == "user"]
+        pad = ("the thread you hold: one pattern learned closely, then "
+               "trusted at a larger scale. ") * 8
+        quoted = " ".join('you added "' + s + '" and it stays in your '
+                          "own words." for s in said)
+        structured = {
+            "reflection": "## the thread\n\n" + pad + quoted +
+                          "\n\nUse: carry one small thread forward "
+                          "tonight.",
+            "coda": ("from our conversation — " + " / ".join(said))
+            if said else None,
+            # 26.995-06 task 2 (D-05): the reflection call's question
+            # field is gone from the wire, so this stub stops emitting
+            # one. FAKE_CLAUDE_QUESTION still drives the NOTE call's own
+            # question below — a different feature entirely.
+        }
+        # 26.8-03: the whys pass-through, mirrored on the echo builder —
+        # a "whys" key inside FAKE_CLAUDE_REFLECTION rides the echo
+        # envelope unchanged (else omitted; never an invented empty list).
+        if reflection is not None:
+            try:
+                robj = json.loads(reflection)
+            except ValueError:
+                robj = {}
+            if isinstance(robj, dict) and "whys" in robj:
+                structured["whys"] = robj.get("whys")
+            # 26.995-06 task 1a: the SPOKEN REPLY pass-through, mirrored
+            # from the whys line directly above for exactly the same
+            # reason — an explicit-key rebuild silently DROPS anything it
+            # does not name, and a dropped field makes every test of it
+            # vacuous (Pitfall 2). Present rides through unchanged;
+            # absent stays absent.
+            if isinstance(robj, dict) and "said" in robj:
+                structured["said"] = robj.get("said")
+    elif reflection is not None:
+        # 26.7-01: the reflection-call shape {reflection, name, said, coda}
+        # — canned via the env toggle, deterministic like everything else
+        # here. An unparseable value answers an empty-string essay.
+        try:
+            obj = json.loads(reflection)
+        except ValueError:
+            obj = {}
+        if not isinstance(obj, dict):
+            obj = {}
+        # 26.995-06 task 2 (D-05): no question key — see the echo builder.
+        structured = {"reflection": str(obj.get("reflection") or ""),
+                      "coda": obj.get("coda")}
+        # 26.8-03: the whys pass-through — the explicit-key rebuild above
+        # silently DROPPED a whys key (Pitfall 2: every whys test was
+        # vacuous until this line); present rides through unchanged,
+        # absent stays omitted (never an invented empty list).
+        if "whys" in obj:
+            structured["whys"] = obj.get("whys")
+        # 26.995-06 task 1a: the spoken reply, on the same explicit
+        # pass-through as whys above — see that comment for why an
+        # unnamed key would make every test of this field vacuous.
+        if "said" in obj:
+            structured["said"] = obj.get("said")
+    elif connections is not None:
+        # 26.4-02: the connection-call shape {connections:[{title,
+        # connected_ids, why}]} — canned via the env toggle, deterministic
+        # like everything else here. An unparseable value answers empty.
+        try:
+            conns = json.loads(connections)
+        except ValueError:
+            conns = []
+        structured = {"connections": conns if isinstance(conns, list)
+                      else []}
+    elif labels is not None:
+        # 26.85-03: the tier-1 cleaning shape {labels:[{id, room, tags,
+        # type, unsure}]} — canned via the env toggle, deterministic like
+        # everything else here. An unparseable value answers empty, so a
+        # malformed toggle can never look like a confident proposal.
+        try:
+            parsed = json.loads(labels)
+        except ValueError:
+            parsed = []
+        structured = {"labels": parsed if isinstance(parsed, list) else []}
+    elif note is not None or question is not None:
+        # 26-03: the note-call shape {note, question, topic} — canned
+        # via the env toggles, deterministic like everything else here
+        structured = {"note": note or "",
+                      "question": question or None,
+                      "topic": os.environ.get("FAKE_CLAUDE_TOPIC")
+                      or None}
+    else:
+        verdicts = []
+        rogue = os.environ.get("FAKE_CLAUDE_ROGUE_ID")
+        if rogue:
+            verdicts.append({"id": rogue, "shelf": "joyful",
+                             "why": "a made-up id the server must drop"})
+        structured = {"verdicts": verdicts}
+    print(json.dumps({"result": "", "is_error": False,
+                      "total_cost_usd": cost, "session_id": "test",
+                      "usage": {},
+                      "structured_output": structured}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

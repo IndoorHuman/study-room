@@ -1,0 +1,201 @@
+{
+ "_about": [
+  "Cases for strip_chrome (V17) and clean_ok (V16). All invented.",
+  "",
+  "⚠ THE UNIT IS UNICODE CODE POINTS OVER THE NFC-NORMALISED STRING, and the",
+  "two rejected units are represented here on purpose so a future reader can",
+  "see that they give a DIFFERENT answer rather than take the choice on",
+  "trust: `cjk_30` is 30 characters and 90 UTF-8 bytes, and `decomposed_29`",
+  "is 58 code points raw and 29 after NFC.",
+  "",
+  "⚠ A4 — these chrome patterns are NOT #40's. The measured leftover count",
+  "with the research's own patterns was 167 of 3,748 (4.5%) against the",
+  "ticket's 173 (5%). The SHAPE is confirmed; the exact number will differ,",
+  "so 173 is approximate and NO GATE MAY PIN IT. Nothing in this file counts",
+  "leftovers."
+ ],
+ "cases": [
+  {
+   "name": "pure_chrome_only",
+   "why": "a status bar and one bar label and nothing else — the clean fails and the picture stays a picture. ⚠ CR-03 CHANGED THE DECLARED `cleaned` FROM \"\" TO \"Done\", and the change is the whole trade recorded as a value: the bar label now SURVIVES the strip. It is left in on purpose, because the only way to delete it was a rule that also deleted her own `Done`, `Back`, `完成` and `更多`. `clean_ok` is still false — four characters is nowhere near the 30-code-point floor — so this picture still stays a picture, which is what the case was really protecting.",
+   "text": "9:41 LTE 100% Done",
+   "cleaned": "Done",
+   "clean_ok": false
+  },
+  {
+   "name": "boundary_29",
+   "why": "29 code points after stripping — no note. The chrome is what pushed it under, which is the whole point of stripping first.",
+   "text": "9:41 100% aaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "cleaned": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "clean_ok": false
+  },
+  {
+   "name": "boundary_30",
+   "why": "exactly 30 code points after stripping — a note. The comparison is `>=`.",
+   "text": "9:41 100% aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "cleaned": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "clean_ok": true
+  },
+  {
+   "name": "cjk_30",
+   "why": "THE NAMED ENCODING CASE. Exactly 30 Chinese characters and exactly 90 UTF-8 bytes. Thirty means thirty in both languages; a byte threshold would have made it roughly three times stricter here, which is the exact asymmetry this phase exists to remove.",
+   "text": "今天天气很好我去公园散步看见很多人在跑步打太极拳心情真的非常",
+   "cleaned": "今天天气很好我去公园散步看见很多人在跑步打太极拳心情真的非常",
+   "code_points": 30,
+   "utf8_bytes": 90,
+   "clean_ok": true
+  },
+  {
+   "name": "cjk_29",
+   "why": "29 Chinese characters — no note, on the same rule that gives 29 Latin ones no note.",
+   "text": "今天天气很好我去公园散步看见很多人在跑步打太极拳心情真的非",
+   "code_points": 29,
+   "utf8_bytes": 87,
+   "clean_ok": false
+  },
+  {
+   "name": "decomposed_29",
+   "why": "THE NAMED NORMALISATION CASE. 29 e-acute written DECOMPOSED: 58 code points raw, 29 after NFC. Without the normalisation this would pass on 58; with it, it correctly fails on 29. Vision may return decomposed forms and a decomposed string has more code points than its composed equal. ⚠ The literal below is genuinely decomposed (e + U+0301) and an editor that recomposed it would silently turn this case into a no-op — so the suite asserts `raw_code_points` BY VALUE against the fixture before it asserts anything about clean_ok.",
+   "text": "ééééééééééééééééééééééééééééé",
+   "raw_code_points": 58,
+   "nfc_code_points": 29,
+   "clean_ok": false
+  },
+  {
+   "name": "decomposed_30",
+   "why": "30 decomposed e-acute: 60 code points raw, 30 after NFC — a note, on the same rule.",
+   "text": "éééééééééééééééééééééééééééééé",
+   "raw_code_points": 60,
+   "nfc_code_points": 30,
+   "clean_ok": true
+  },
+  {
+   "name": "chrome_in_the_middle",
+   "why": "chrome is not only a prefix — a clock and a battery reading in the middle of a line go too, and the surrounding words are left alone",
+   "text": "the first half of the sentence 9:41 100% and the second half of it",
+   "cleaned": "the first half of the sentence and the second half of it",
+   "clean_ok": true
+  },
+  {
+   "name": "chinese_affordances",
+   "why": "⚠ REWRITTEN FOR CR-03. This case used to say 'the Chinese bar words are chrome in exactly the way their English twins are' — and that sentence was the defect, written down as an expectation. 取消 and 完成 are ordinary Chinese words, so the rule that deleted them here also deleted them out of her prose (measured: 18 and 102 occurrences in her own minted notes). They now SURVIVE, and the clock still goes. A bar label left in a note is visible and harmless; a deleted word is neither.",
+   "text": "8:08 取消 完成 这是一段足够长的中文正文用来通过清理的判定条件所以不会被丢掉真的",
+   "cleaned": "取消 完成 这是一段足够长的中文正文用来通过清理的判定条件所以不会被丢掉真的",
+   "clean_ok": true
+  },
+
+  {
+   "name": "her_words_more_en",
+   "why": "HER OWN WORDS, off her own screenshot — a KOPI menu board. `More` is an ordinary English word and the rule ate it out of a drink name.",
+   "text": "Black Coffee with More So",
+   "cleaned": "Black Coffee with More So",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_back_en",
+   "why": "HER OWN WORDS — a clothing listing. `Back` names a part of the body and a part of a garment long before it names a button.",
+   "text": "Leg Pants High Elastic Waisted in The Back Business Work Trousers",
+   "cleaned": "Leg Pants High Elastic Waisted in The Back Business Work Trousers",
+   "her_words": true,
+   "clean_ok": true
+  },
+  {
+   "name": "her_words_edit_en",
+   "why": "HER OWN WORDS — saved notes on agentic coding. `Edit-Test loops` is the name of a technique; the rule cut the word out of the middle of the compound and left `-Test loops`.",
+   "text": "let the agent write code in small chunks of Edit-Test loops",
+   "cleaned": "let the agent write code in small chunks of Edit-Test loops",
+   "her_words": true,
+   "clean_ok": true
+  },
+  {
+   "name": "her_words_menu_en",
+   "why": "HER OWN WORDS — a restaurant listing. A menu is a thing you eat from; the rule deleted the first word of the line.",
+   "text": "Menu. vonschickennewark.com Place an order",
+   "cleaned": "Menu. vonschickennewark.com Place an order",
+   "her_words": true,
+   "clean_ok": true
+  },
+  {
+   "name": "her_words_done_en",
+   "why": "HER OWN WORDS — `Money-Back Guarantee` and an ordinary use of `Done`. TWO tokens in one line, which is why the old list could quietly take two bites out of a single sentence.",
+   "text": "Money-Back Guarantee, and the course is Done when you say it is",
+   "cleaned": "Money-Back Guarantee, and the course is Done when you say it is",
+   "her_words": true,
+   "clean_ok": true
+  },
+  {
+   "name": "her_words_zh_wancheng",
+   "why": "HER OWN WORDS — 完成 ('to complete') is among the most common words in ordinary written Chinese. This phase exists because 87% of her Chinese was destroyed once; the rule was destroying more of it.",
+   "text": "节目组想完成一位过世老人的遗愿",
+   "cleaned": "节目组想完成一位过世老人的遗愿",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_wancheng_mixed",
+   "why": "HER OWN WORDS — the same word inside a mixed Chinese/English work note. 102 occurrences of 完成 were measured across her own minted notes.",
+   "text": "前十分钟应该尽快完成 requirement的核实",
+   "cleaned": "前十分钟应该尽快完成 requirement的核实",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_gengduo",
+   "why": "HER OWN WORDS — 更多 ('more') in a purchase line she saved.",
+   "text": "立即购买 更多电子书/纸质版购买",
+   "cleaned": "立即购买 更多电子书/纸质版购买",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_gengduo_prose",
+   "why": "HER OWN WORDS — 更多 inside a sentence about her own strength, saved off a book page. The rule reached into the middle of a clause and took a word out of it.",
+   "text": "你已经强大到能散发魅力吸引更多人想和你做朋友",
+   "cleaned": "你已经强大到能散发魅力吸引更多人想和你做朋友",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_bianji_compound",
+   "why": "⚠ THE WORST SHAPE, AND THE ONE THAT PROVES CHINESE CANNOT BE FENCED BY A WORD LIST. There is no `\\b` in Chinese, so 编辑 fired INSIDE 编辑器 ('editor') and left the bare 器. An English token at least had a word boundary to hide behind; a Chinese one has none.",
+   "text": "使用参考打开的编辑器来快速将它们添加到上下文",
+   "cleaned": "使用参考打开的编辑器来快速将它们添加到上下文",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_fanhui",
+   "why": "HER OWN WORDS — 返回通话 ('return to the call') is a sentence, not a button. The rule left `轻触此处来 通话`.",
+   "text": "轻触此处来返回通话",
+   "cleaned": "轻触此处来返回通话",
+   "her_words": true,
+   "clean_ok": false
+  },
+  {
+   "name": "her_words_zh_quxiao",
+   "why": "HER OWN WORDS — 取消 inside an instruction she saved about a scam text.",
+   "text": "请回复取消该短信提醒并注意辨别防范风险",
+   "cleaned": "请回复取消该短信提醒并注意辨别防范风险",
+   "her_words": true,
+   "clean_ok": false
+  }
+ ],
+ "fail_closed": [
+  {"name": "none", "why": "a missing OCR row", "value": null},
+  {"name": "error_row", "why": "the merged program's EXPLICIT {path,error} row — the shape that makes fail-closed real rather than lucky", "value": {"path": "/x/a.jpeg", "error": "unreadable image"}},
+  {"name": "not_a_string", "why": "anything that is not a str after extraction", "value": 12345},
+  {"name": "empty_string", "why": "the degenerate case a naive join produces", "value": ""},
+  {"name": "row_without_text", "why": "a dict with no text key at all", "value": {"path": "/x/b.jpeg"}}
+ ],
+ "purity_inputs": [
+  "9:41 LTE 100% Done",
+  "8:08 取消 完成 这是一段足够长的中文正文",
+  "",
+  "   ",
+  "no chrome at all, just words",
+  "10:02 PM Wi-Fi 63% mixed 中英文 content 在一起",
+  "ééé decomposed input",
+  "%%% 999% :: 12:34:56 ::"
+ ]
+}

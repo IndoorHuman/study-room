@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "meta": {
+    "library_root": "/tmp/compat-bank-throwaway-current",
+    "consolidation": null,
+    "habit_anchor": null,
+    "habit_anchor_asked": false,
+    "cycle": {
+      "number": 1,
+      "shown_ids": []
+    },
+    "current_shelf": null,
+    "last_import_report": null,
+    "filters": [],
+    "cover_offers": {},
+    "current_cover": null,
+    "incidents": [],
+    "last_visit_ms": null,
+    "fenced_roster": [
+      "ExampleSensitiveFolder"
+    ],
+    "sync_comments_enabled": false,
+    "librarian_enabled": true,
+    "onboarding_complete": true,
+    "cleaning_enabled": true
+  },
+  "items": {
+    "throwaway-current-1": {
+      "id": "throwaway-current-1",
+      "type": "text",
+      "state": "blessed",
+      "title": "compat bank current sample (synthetic)",
+      "library_path": "items/throwaway-current-1.md",
+      "year": 2026,
+      "folder": "compat-samples",
+      "tags": [],
+      "source": "folder",
+      "reflects": false
+    }
+  }
+}

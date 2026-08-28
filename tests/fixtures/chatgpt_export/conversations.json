@@ -1,0 +1,110 @@
+[
+ {
+  "title": "tea kettle notes",
+  "create_time": 1710000000.0,
+  "update_time": 1710000600.0,
+  "current_node": "node-a4",
+  "mapping": {
+   "node-a1": {
+    "id": "node-a1",
+    "parent": null,
+    "children": ["node-a2"],
+    "message": null
+   },
+   "node-a2": {
+    "id": "node-a2",
+    "parent": "node-a1",
+    "children": ["node-a3"],
+    "message": {
+     "author": {"role": "user"},
+     "create_time": 1710000010.0,
+     "content": {"content_type": "text", "parts": ["how do I descale a kettle?"]}
+    }
+   },
+   "node-a3": {
+    "id": "node-a3",
+    "parent": "node-a2",
+    "children": ["node-a4"],
+    "message": {
+     "author": {"role": "assistant"},
+     "create_time": 1710000020.0,
+     "content": {"content_type": "text", "parts": ["Use vinegar and water, then rinse well."]}
+    }
+   },
+   "node-a4": {
+    "id": "node-a4",
+    "parent": "node-a3",
+    "children": [],
+    "message": {
+     "author": {"role": "user"},
+     "create_time": 1710000030.0,
+     "content": {"content_type": "text", "parts": ["thanks, that worked"]}
+    }
+   }
+  }
+ },
+ {
+  "title": "pottery glaze question",
+  "create_time": 1712000000.5,
+  "update_time": 1712000900.0,
+  "current_node": "node-b5",
+  "mapping": {
+   "node-b1": {
+    "id": "node-b1",
+    "parent": null,
+    "children": ["node-b2-old", "node-b2-new"],
+    "message": null
+   },
+   "node-b2-old": {
+    "id": "node-b2-old",
+    "parent": "node-b1",
+    "children": ["node-b3-old"],
+    "message": {
+     "author": {"role": "user"},
+     "create_time": 1712000010.0,
+     "content": {"content_type": "text", "parts": ["ABANDONED-BRANCH-MARKER first draft of the question"]}
+    }
+   },
+   "node-b3-old": {
+    "id": "node-b3-old",
+    "parent": "node-b2-old",
+    "children": [],
+    "message": {
+     "author": {"role": "assistant"},
+     "create_time": 1712000020.0,
+     "content": {"content_type": "text", "parts": ["an answer to the abandoned first draft"]}
+    }
+   },
+   "node-b2-new": {
+    "id": "node-b2-new",
+    "parent": "node-b1",
+    "children": ["node-b3-new"],
+    "message": {
+     "author": {"role": "user"},
+     "create_time": 1712000100.0,
+     "content": {"content_type": "text", "parts": ["second, kept question about pottery glaze"]}
+    }
+   },
+   "node-b3-new": {
+    "id": "node-b3-new",
+    "parent": "node-b2-new",
+    "children": ["node-b5"],
+    "message": {
+     "author": {"role": "assistant"},
+     "create_time": 1712000110.0,
+     "content": {"content_type": "code", "language": "python", "text": "print('a code turn the reader has no home for')"}
+    }
+   },
+   "node-b5": {
+    "id": "node-b5",
+    "parent": "node-b3-new",
+    "children": [],
+    "message": {
+     "author": {"role": "assistant"},
+     "create_time": 1712000120.0,
+     "content": {"content_type": "text", "parts": ["the glaze needs a second firing", {"asset_pointer": "file-service://not-a-string-part"}]}
+    }
+   }
+  }
+ }
+]

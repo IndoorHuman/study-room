@@ -1,0 +1,101 @@
+{
+ "_about": [
+  "Coordinates for group_bursts (V14) and cosine_from_distance (V15).",
+  "",
+  "⚠ COORDINATES, NOT PHOTOGRAPHS. group_bursts consumes exactly two numbers",
+  "per consecutive pair — the gap in milliseconds and the cosine of the two",
+  "feature prints. A synthetic pair built at the MEASURED coordinates",
+  "therefore exercises the shipped code path with the measured inputs, and no",
+  "real feature-print byte and no real item id has to be committed to do it.",
+  "",
+  "⚠ THE CLOCK IS THE RULE; THE SIMILARITY IS THE RAIL. The named case below",
+  "sits at cosine 0.872, which is essentially the MEDIAN of true consecutive",
+  "bursts (0.888) — so no similarity threshold could have cut it without",
+  "cutting more than half of every real burst. Only the time window excludes",
+  "it. Its control is the same cosine at 19 s, which merges: that pair is what",
+  "proves the clock is doing the work.",
+  "",
+  "⚠ A5, RECORDED AND NOT DISCHARGED: no precision or recall exists for this",
+  "rule and none can be produced from existing data — #40's 247 groups are a",
+  "rule's OUTPUT, not labels, so validating against them is circular. The",
+  "owner's manual read of six sampled groups (five correct, one wrong) is the",
+  "only ground truth and it is not recorded per item anywhere reachable.",
+  "Nothing in this file claims a precision or a recall."
+ ],
+ "constants": {
+  "BURST_WINDOW_MS": 20000,
+  "BURST_COS_FLOOR": 0.50
+ },
+ "window_sweep": {
+  "_about": "groups produced at each window over the 3,748 true screenshots. #40 reported 247 groups / 700 members; 20 s reproduces it at 246 and is the LARGEST window that still excludes the named false group (27 s > 20 s; at 30 s it merges).",
+  "10000": 190, "15000": 230, "20000": 246, "30000": 265, "60000": 292
+ },
+ "threshold_sweep": {
+  "_about": "links cut by T at W = 20 s, out of 496. T = 0.50 fails toward MERGING, which is D-08's ruling; T = 0.70 is a fail-toward-SPLITTING threshold in disguise.",
+  "0.00": 0, "0.50": 4, "0.60": 16, "0.70": 51, "0.80": 131
+ },
+ "separation": {
+  "_about": "cosine p50 by pair class, n=1,500 sampled per class. Random pairs sit ABOVE the floor — which is why the rail is nearly inert and the plan says so out loud.",
+  "consecutive_within_20s_p50": 0.888,
+  "consecutive_beyond_20s_p50": 0.680,
+  "random_pairs_p50": 0.626
+ },
+ "pairs": [
+  {
+   "name": "known_false_group",
+   "provenance": "#40's ONE documented false group: `WRNS Studio` then `BccI Construction`. Reproduced here at its measured coordinates with SYNTHETIC ids and SYNTHETIC vectors — the two real item ids are deliberately absent from tests/.",
+   "gap_ms": 27000,
+   "cosine": 0.872,
+   "expect": "split",
+   "why": "27,000 > 20,000. The similarity gate is structurally incapable of removing this pair: 0.872 is essentially the median of true bursts."
+  },
+  {
+   "name": "same_similarity_inside_window",
+   "provenance": "the control for the case above — identical cosine, a gap inside the window.",
+   "gap_ms": 19000,
+   "cosine": 0.872,
+   "expect": "merge",
+   "why": "this is what proves the CLOCK is doing the work and not the rail."
+  },
+  {
+   "name": "window_boundary_joins",
+   "gap_ms": 20000,
+   "cosine": 0.99,
+   "expect": "merge",
+   "why": "the comparison is `<=`, so exactly 20,000 ms joins."
+  },
+  {
+   "name": "window_boundary_splits",
+   "gap_ms": 20001,
+   "cosine": 0.99,
+   "expect": "split",
+   "why": "one millisecond past the window and it does not."
+  },
+  {
+   "name": "cosine_boundary_joins",
+   "gap_ms": 1000,
+   "cosine": 0.50,
+   "expect": "merge",
+   "why": "the comparison is `>=`, so exactly 0.50 joins, with no rounding step before it."
+  },
+  {
+   "name": "cosine_boundary_splits",
+   "gap_ms": 1000,
+   "cosine": 0.4999,
+   "expect": "split",
+   "why": "a ten-thousandth under and it does not."
+  },
+  {
+   "name": "the_and_is_an_and",
+   "gap_ms": 1000,
+   "cosine": 0.49,
+   "expect": "split",
+   "why": "a one-second gap is not enough on its own — the two tests are ANDed, and this is the side of that AND the rail owns."
+  }
+ ],
+ "identity": {
+  "_about": "V15. cos = 1 - d^2/2 on an L2-normalised print (median ||v|| = 1.0001), verified on a real pair at cos 0.7829 against 1 - d^2/2 = 0.7822 (float32 rounding). ⚠ NEVER `1 - distance` — VNGenerateImageFeaturePrintRequest.computeDistance returns a DISTANCE, and inverting it collapses exactly the photographs it should keep apart.",
+  "verified_pair": {"cosine": 0.7829, "one_minus_d2_over_2": 0.7822},
+  "distances": [0.0, 0.25, 0.471, 0.5, 0.8, 0.865, 1.0, 1.4142135623730951, 2.0]
+ }
+}
