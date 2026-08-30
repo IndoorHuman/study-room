@@ -53,7 +53,7 @@ answer, the room makes no request at all, and the steps below still work.
 2026-08-30
 
 <!-- OWNER_COPY_UPDATE_WHATS_NEW -->
-Update on the steamline update through the app without you follow the steps to update from the previous readme
+Update on the streamline update through the app without you follow the steps to update from the previous readme
 
 <!-- OWNER_COPY_UPDATE_DOWNLOAD -->
 Download the latest release from GitHub and unzip it.
