@@ -162,9 +162,26 @@ _Avoid_: backend, runtime, vendor.
 The least the room needs to open: **one** Provider that can answer. For a cloud
 Provider that means a key is present; for the local one it means Ollama is
 running *and* has its language model. One is always enough — a key-only room and
-a local-only room are each complete, and neither is a lesser room.
+a local-only room are each complete, and neither is a lesser room. The search
+model is not part of this bar — without it the room still opens, and reports
+that it cannot search — but first-timer setup's consented pull still fetches
+search alongside the language default so a stranger is not left in that state
+on purpose.
 _Avoid_: "signed in", which describes a login the room no longer has; and
 "available", which the code uses for a narrower per-call question.
+
+**Smoke bar**:
+The short checklist that must pass on the owner's machine before either
+first-timer default tag (language or search) may change. An agent runs it; the
+owner signs. Whenever either default moves, both halves run: language is a tiny
+`import_presort` fixture that returns schema-valid, id-whitelisted structured
+output; search is one live embed that returns a non-empty vector of finite
+floats; both download sizes are measured so consent copy stays honest. It is an
+owner gate on what strangers will be offered to pull — not a start-up check, not
+a stranger-facing runtime test, and not a judgement of answer quality.
+_Avoid_: treating capability-from-tags alone as enough to *change* the shipped
+default (that free answer is enough only when *offering* a model already on
+someone's machine); and folding vault evals or RAM floors into the bar.
 
 **Start-up check**:
 The look the room takes at its Providers as it starts. It checks only what is
@@ -346,6 +363,23 @@ never suggests a form, and the room is never told what to write.
 _Avoid_: shape (two other facts in this project are already spelled that way),
 summary (it summarises nothing), variation block — that was the deleted
 avoid-list, which named what *not* to do. This names what is there.
+
+**Decline**:
+A real “nothing to say” after the librarian was asked. A blank day may only
+mean this. It is never the word for a call that never happened.
+_Avoid_: refusal, silence, empty — those blur a Decline with a failure to reach.
+
+**Couldn't reach**:
+The librarian never got to ask — money, a temporary reach failure (network,
+busy, unwell, timeout), or the room asked for something that isn’t there.
+Three kinds; different next moves. Landed reflections stay; new ones are
+unavailable; blessing still lands. Nothing is written on the day as a
+reflection outcome.
+_Avoid_: calling it a Decline, or “the librarian had nothing to say.”
+
+> ⚠️ **Owner ruling, wayfinder #172 (2026-08-28).** A failure to reach may never
+> borrow a Decline’s voice. The build that makes the split honest is GSD’s;
+> the desk lines and the launch naming line are hers.
 
 **Counting**:
 The owner's word for a reflection that opens by tallying instances — *"the word

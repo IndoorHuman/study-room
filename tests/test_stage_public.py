@@ -419,6 +419,10 @@ PYTHON_ADDED_THIS_PHASE = (
     # one. A running sort could not be stopped from inside the room at all,
     # so the gate has to drive the worker's own loop.
     ("test_stop_a_sort.py", "26.99955-UAT G-…-05"),
+    # 26.997 owner ask: running collect/import stoppable so librarian is free.
+    ("test_stop_a_collect.py", "26.997 stop-import"),
+    # 26.9996 bundled agent skills installer.
+    ("test_install_agent_skills.py", "26.9996 bundled skills install"),
 )
 # ⛔ A lowering is still the dangerous direction and this phase still does not
 # take one.
@@ -440,7 +444,7 @@ NODE_REMOVED_THIS_PHASE = ()
 # node suite (UPD-01..08/10 instruments). Prior pin lagged disk (50/67 vs
 # 52/70); this commit sets BOTH pins BY VALUE to disk, same commit as
 # NODE_SUITES in test_live_render.cjs (26.99955 drift lesson).
-EXPECTED_PYTHON_SUITES = 58     # measured: ls tests/test_*.py | wc -l
+EXPECTED_PYTHON_SUITES = 60     # was 59; +1 for test_install_agent_skills.py
 EXPECTED_NODE_SUITES = 74       # measured: ls tests/*.cjs | wc -l
 # ⚠⚠ THESE TWO MOVED BY EXACTLY WHAT THIS WORK ADDED, AND BY NOT ONE MORE —
 # +1 python and +1 node, each named in the tuples above. ⛔ THE GATE IS STILL

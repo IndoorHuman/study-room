@@ -300,17 +300,38 @@ class TestDerivedExportRoot(unittest.TestCase):
     """26.65-07 / D-19 / T-26.65-25 — the export root is DERIVED, and an
     unusable one is FATAL rather than quietly falling back."""
 
-    def test_export_root_is_derived_from_home_and_not_hidden(self):
+    def test_export_root_is_derived_from_account_home_and_not_hidden(self):
         root = apple_photos._export_root_parent()
-        self.assertTrue(str(root).startswith(str(Path.home())),
-                        "the export root is derived from Path.home()")
-        self.assertEqual(root.relative_to(Path.home()).parts[0], "Pictures",
+        home = apple_photos._account_home()
+        self.assertTrue(str(root).startswith(str(home)),
+                        "the export root is derived from the account home")
+        self.assertEqual(root.relative_to(home).parts[0], "Pictures",
                          "Photos is only permitted to write under Pictures — "
                          "measured on the real Mac 2026-08-11")
         self.assertFalse(
             root.name.startswith("."),
             "a dot-prefixed export root would make every rendition hidden to "
             "the shipped importer (skipped.hidden)")
+
+    def test_export_root_ignores_swapped_home_env(self):
+        """26.997 P3: fake HOME must not relocate Photos export root."""
+        real_home = apple_photos._account_home()
+        with tempfile.TemporaryDirectory() as fake:
+            prior = os.environ.get("HOME")
+            os.environ["HOME"] = fake
+            try:
+                root = apple_photos._export_root_parent()
+            finally:
+                if prior is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = prior
+        self.assertTrue(
+            str(root).startswith(str(real_home / "Pictures")),
+            "export root stays under the account Pictures tree when HOME is "
+            "swapped")
+        self.assertFalse(str(root).startswith(fake),
+                         "export root must not follow a throwaway HOME")
 
     def test_no_spelled_home_path_in_the_adapter_source(self):
         # the needle itself is DERIVED from this machine's home rather than
@@ -1688,7 +1709,7 @@ class AStoppedRoomStopsReadingHerPhotographs(unittest.TestCase):
         """⛔ HER WORDING. Front-facing and not this plan's to edit. Pinned
         byte-exact so a teardown cannot quietly reword or relocate it."""
         src = inspect.getsource(server.main)
-        self.assertIn("The room is closed — everything is saved.", src)
+        self.assertIn("The room is closed. Everything is saved.", src)
 
 
 # ---------------------------------------------------------------------------

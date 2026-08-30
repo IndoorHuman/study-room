@@ -171,11 +171,12 @@ try {
   }
 
   const a = liftConst('ROSTER_ADD_FUTURE_ONLY');
-  if (a.indexOf('—') === -1) {
-    violations.push('[A] ROSTER_ADD_FUTURE_ONLY has lost its em dash ' +
-      '(U+2014) — an en dash or a hyphen is not what she ruled.');
+  // Re-ruled by the owner 2026-08-30: no em dash anywhere in the room's copy.
+  if (a.indexOf('—') !== -1) {
+    violations.push('[A] ROSTER_ADD_FUTURE_ONLY carries an em dash ' +
+      '(U+2014) — the 2026-08-30 re-ruling removed every one.');
   } else {
-    notes.push('A1 keeps its em dash');
+    notes.push('A1 carries no em dash (re-ruled 2026-08-30)');
   }
 } catch (e) {
   violations.push('[instrument] ' + (e && e.message ? e.message : e));

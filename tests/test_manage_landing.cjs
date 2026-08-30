@@ -229,11 +229,11 @@ function copyArm(appSrc, indexSrc) {
   const RULED = [
     { q: 'Q2', where: 'the candle card',
       s: 'the candle is the librarian. its flame carries what she is ' +
-         'doing — never the time of day.' },
+         'doing, never the time of day.' },
     { q: 'Q22', where: 'the front-page numbers card',
       s: 'these numbers are kept on this computer and go nowhere.' },
     { q: 'Q28', where: 'the private-folders page',
-      s: 'the same list the room shows you before an import — edited ' +
+      s: 'the same list the room shows you before an import: edited ' +
          'here, it is edited there.' },
     { q: 'Q29', where: 'the private-folders page',
       s: 'this list is her boundary, so it stays next to her.' }

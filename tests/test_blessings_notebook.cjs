@@ -8242,7 +8242,7 @@ function regionCount(nodes) {
   // by authoring a second, client-side copy of the refusals. The sibling
   // assertion below closes it, and it is why this narrowing is safe.
   const AUTHORED_BAND_LABELS = [NB_SRC_CONSTS.NB_RESET_COPY,
-    'undo everything? yes / no', 'yes', 'no', "couldn't save — try again."];
+    'undo everything? yes / no', 'yes', 'no', "couldn't save. try again."];
   AUTHORED_BAND_LABELS.forEach(function (s) {
     ['sched', 'cron', 'reminder', 'notification(', 'pushmanager',
       'shownotification', 'setinterval(', 'navigator.serviceworker',
@@ -8376,14 +8376,14 @@ function regionCount(nodes) {
   // The FALLBACK branch below keeps the shipped equality-against-the-literal
   // form VERBATIM, because that form is what catches a re-authored near-miss
   // ("could not save, please try again") that any grep for "save" would pass.
-  const others = appSrc.split("couldn't save — try again.").length - 1;
+  const others = appSrc.split("couldn't save. try again.").length - 1;
   assert.ok(others >= 10,
     '(9m) fallback-branch: the save-failure line is the house\'s one ' +
     'save-failure line — it occurs ' + others + ' times in app.js, so ' +
     'reusing it is REUSE rather than authoring. It is NOT retired by ' +
     'F-23 change (b); it becomes the fallback, and this count is what ' +
     'makes that reuse rather than authoring');
-  const shipped = /"(couldn't save — try again\.)"/.exec(appSrc);
+  const shipped = /"(couldn't save\. try again\.)"/.exec(appSrc);
   assert.ok(shipped, '(9m) fallback-branch: and it is findable as a literal');
   assert.strictEqual(row.text, shipped[1],
     '(9m) fallback-branch: THE ROW\'S COPY IS THAT EXACT STRING when the ' +

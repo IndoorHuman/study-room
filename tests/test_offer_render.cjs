@@ -182,7 +182,7 @@ function tokenRgb(name) {
 /* Walk forward from `from`, honouring string literals and comments, and
    return the index just past the `;` that closes the statement at depth
    zero. Returns -1 when there is none. A naive indexOf(';') would stop
-   inside `"done — this one won't come round again."` the day a copy
+   inside `"done. this one won't come round again."` the day a copy
    candidate gains one. */
 function endOfStatement(src, from) {
   let i = from;

@@ -136,7 +136,7 @@ const CHANGE_LINE = FOLDER + " stays off the librarian's reach.";
 // surface (§ B-27). Pinned here only so this file cannot be read as licence
 // to move it while working next door.
 const PANE_REMOVE_LINE = 'The librarian can read that folder again. Things ' +
-  'already set aside stay set aside — you can bring any of them back ' +
+  'already set aside stay set aside; you can bring any of them back ' +
   'yourself, one at a time.';
 // CONTROL B's known-absent: a sentence no surface in the room says.
 const SENTINEL = 'this gate is looking at a string that is not on the card';
@@ -473,10 +473,11 @@ async function driveTheRosterPane(session, url) {
         ' chars, codepoints match her record)');
     }
     // ⛔ The two characters a "tidy" moves without showing in a diff.
-    if (shipped.indexOf('—') === -1) {
-      fail('[record] ROSTER_REMOVE_FUTURE_ONLY has lost its EM DASH ' +
-        '(U+2014) — an en dash or a hyphen is not what she ruled.');
-    } else { note('W-7 keeps its em dash'); }
+    // Re-ruled by the owner 2026-08-30: no em dash anywhere in the room's copy.
+    if (shipped.indexOf('—') !== -1) {
+      fail('[record] ROSTER_REMOVE_FUTURE_ONLY carries an EM DASH ' +
+        '(U+2014) — the 2026-08-30 re-ruling removed every one.');
+    } else { note('W-7 carries no em dash (re-ruled 2026-08-30)'); }
     if (shipped && shipped[0] !== shipped[0].toUpperCase()) {
       fail('[record] ROSTER_REMOVE_FUTURE_ONLY has been LOWERCASED. This ' +
         'surface capitalises — unlike the room\'s lowercase session copy — ' +

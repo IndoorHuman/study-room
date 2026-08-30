@@ -130,7 +130,7 @@ const os = require('os');
 // never what they say.
 const DOORS = [
   ['.session-consent-meta', 'just titles and dates'],
-  ['.session-consent-full', "yes — read what's new"],
+  ['.session-consent-full', "yes: read what's new"],
   ['.session-consent-later', 'not now']
 ];
 // ---- HER THREE SENTENCES, LIFTED FROM THE SHIPPED SOURCE ------------------

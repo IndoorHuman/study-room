@@ -67,8 +67,8 @@ function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
  * being measured. A lift makes a reword change both sides and pass; this file
  * is the one that would notice her words being "tidied". Her lowercase `i` is
  * hers and both dashes are EM DASHES (U+2014). */
-const T4 = 'some things here have no date i can trust — i left those out.';
-const G1 = 'there was more than i could hold — i kept what\'s yours.';
+const T4 = 'some things here have no date i can trust; i left those out.';
+const G1 = 'there was more than i could hold; i kept what\'s yours.';
 
 function longDraft() {
   const paras = [];
@@ -203,7 +203,7 @@ async function driveToEnd(session, url) {
 
     const g1 = seen.rows.filter(function (r) { return r.text === G1; })[0];
     const t4 = seen.rows.filter(function (r) { return r.text === T4; })[0];
-    ok(!!g1, 'her G-1 line is present VERBATIM — lowercase i, em dash, ' +
+    ok(!!g1, 'her G-1 line is present VERBATIM — lowercase i, semicolon, ' +
       'untrimmed (pinned by value against the record, never lifted)');
     ok(!!t4, 'and her T-4 undated line too — it had the SAME defect and had ' +
       'shipped with it');

@@ -230,17 +230,18 @@ console.log('\n-- 7. HER TELLING REACHES HER, IN HER OWN BYTES --------------');
 // sentence would pass on a "tidied" copy — sentence-cased `I`, a hyphen for
 // her em dash, a trimmed full stop. Her words are the thing being protected,
 // so the literal is the assertion.
-const G1 = "there was more than i could hold — i kept what's yours.";
-const G2 = 'nothing of your own writing came in this time — this is built ' +
+const G1 = "there was more than i could hold; i kept what's yours.";
+const G2 = 'nothing of your own writing came in this time; this is built ' +
   'from what you saved.';
 ok(APP.indexOf(G1) !== -1,
-  'her G-1 sentence reaches the app VERBATIM — lowercase i, em dash, ' +
+  'her G-1 sentence reaches the app VERBATIM — lowercase i, semicolon, ' +
   'full stop, untrimmed');
 ok(APP.indexOf(G2) !== -1,
   'her G-2 sentence reaches the app VERBATIM');
-// ⛔ THE EM DASH SPECIFICALLY. This repo has smoothed one before.
-ok(G1.indexOf('\u2014') !== -1 && G2.indexOf('\u2014') !== -1,
-  'and both literals carry a real EM DASH (U+2014), not a hyphen');
+// ⛔ THE PUNCTUATION SPECIFICALLY. Re-ruled by the owner 2026-08-30: no em
+// dash anywhere in the room's copy. A dash creeping back is the reword now.
+ok(G1.indexOf('\u2014') === -1 && G2.indexOf('\u2014') === -1,
+  'and neither literal carries an EM DASH (U+2014) — re-ruled 2026-08-30');
 // ⛔ NO SECOND SPELLING OF HER WORDS. One literal each, or a later edit
 // fixes one copy and leaves the other lying in the file.
 ok(APP.split(G1).length - 1 === 1, 'her G-1 line appears exactly ONCE');

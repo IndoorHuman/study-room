@@ -373,11 +373,11 @@ if (postCalls !== 1) {
 
 // ---- 3. PINNED COPY + the local absence gate --------------------------------
 
-const WARM_LINE = 'the library is settled — nothing waiting today.';
-const STATIC_LINE = 'the librarian could not finish just now — nothing ' +
+const WARM_LINE = 'the library is settled. nothing waiting today.';
+const STATIC_LINE = 'the librarian could not finish just now. nothing ' +
   'is lost; the desk is as it was.';
 const OFFER_LINE = 'pick up where we left off?';
-const BOUND_LINE = 'the librarian let this one go — it was taking too ' +
+const BOUND_LINE = 'the librarian let this one go; it was taking too ' +
   'long. nothing is lost; whatever arrived is still here.';
 // ⛔⛔ HER TWO SENTENCES, 2026-08-22. PINNED BY VALUE exactly as BOUND_LINE
 // above is, because a byte-pin is the only thing that catches a silent
@@ -388,7 +388,7 @@ const BOUND_LINE = 'the librarian let this one go — it was taking too ' +
 // wrong, not the record.
 // ⚠ The dash in WALK_WAITED_LINE is an EM DASH, not a hyphen.
 const WAITED_LINE = "the reflection hasn't started; it's waiting for your answer.";
-const WALK_WAITED_LINE = 'no reflection tonight — but everything you welcome here is still kept.';
+const WALK_WAITED_LINE = 'no reflection tonight, but everything you welcome here is still kept.';
 [[WARM_LINE, 'warm nothing-new'], [STATIC_LINE, 'static failure'],
   [OFFER_LINE, 'held-draft offer'], [BOUND_LINE, 'bound-expiry'],
   [WAITED_LINE, 'waiting-for-her (W-3, hers)'],
@@ -1093,7 +1093,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
   // three went red on the day her words landed, which is the pin working
   // rather than the pin being wrong.
   [['C-2', 'walkBookend',
-    "walkBookend: 'something you brought back led here — a " +
+    "walkBookend: 'something you brought back led here: a " +
     "few from the same weeks, other years.'"],
    ['C-6', 'walkQuiet', "walkQuiet: 'not today'"]]
     .forEach(function (row) {
@@ -1273,7 +1273,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
   const HER_WAIT_SENTENCES = [
     'still reading.',
     'this one is taking a while.',
-    'leave it for now — whatever arrives will still be here.'
+    'leave it for now. whatever arrives will still be here.'
   ];
   if (HER_WORDS_IN) {
     COPY_SLOTS.forEach(function (slot, i) {
@@ -2683,7 +2683,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
   // reusing her waiting line, or putting the blaming line back all still fail.
   // ⚠ Byte-pinned from her record, NOT lifted from the source it checks.
   const OPENING = "i was still looking through what's new when time ran out"
-    + ' — nothing is lost.';
+    + '. nothing is lost.';
   if (appSrc.indexOf(OPENING) === -1) {
     fail('⛔ HER U-5 SENTENCE IS NOT IN app.js byte-for-byte — the opening ' +
       'stretch is back to saying something she did not write');
@@ -2710,7 +2710,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
   h = harness(WAITED_LIT, WALK_LIT);
   cardOnScreen(h);
   h.tick(30000);
-  h.S.consent = true;      // her tap on `yes — read what's new`
+  h.S.consent = true;      // her tap on `yes: read what's new`
   h.ask();                 // sessionMaybePost fires: ONE call
   h.S.stage = 'reading…';
   h.tick(MS - 30000);
@@ -4263,7 +4263,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
 (function () {
   // (a) the sentence, ONE contiguous double-quoted literal, byte-equal to
   //     her chosen line (the apostrophe in "it's" is why double quotes).
-  const HER_COLLECT_BUSY_LINE = "the librarian is here — the room is still " +
+  const HER_COLLECT_BUSY_LINE = "the librarian is here. the room is still " +
     "collecting. the candle lights when it's done.";
   const litMatch = /var SESSION_COLLECT_BUSY_LINE = "([^"]*)";/.exec(appSrc);
   if (!litMatch) {
@@ -4274,7 +4274,7 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
     violations.push('[W-6] ' + APP + ': SESSION_COLLECT_BUSY_LINE ships ' +
       JSON.stringify(litMatch[1]) + ', which is NOT the sentence she chose. ' +
       'Her words first, in the ruling record, then here — never the other ' +
-      'way round. The em dash and the lowercase are hers.');
+      'way round. The punctuation and the lowercase are hers (re-ruled 2026-08-30).');
   }
   // (b) the guard arm: the REPULL.busy swallow now sets the flag and seats
   //     the note. Absence = the silent refusal she ruled out is back.
@@ -4404,6 +4404,110 @@ if (startBody.indexOf('LIBRARIAN.status === null') === -1 ||
     violations.push('[W-8] ' + APP + ': the press must be acknowledged in ' +
       'its own gesture (W-7 — doors disable, the shipped interim word ' +
       'seats) before the reach chain runs.');
+  }
+})();
+
+// ---- 26.997-03 Task 1: Don't show a walk begin the room cannot honor ------
+//
+// 2026-08-21: a control the room cannot act on is not drawn. While a photo
+// fetch holds the door (REPULL.busy — the same narrow in-flight collect
+// fact the candle busy note already uses), look-through-them cannot start
+// work, so sessionPaintWalkOpen must omit that button. Idle still draws it.
+// No new owner-facing sentence: absence of the control, not why-missing copy.
+(function () {
+  const paintSrc = functionBody('sessionPaintWalkOpen');
+  if (paintSrc.indexOf('REPULL.busy') === -1) {
+    violations.push('[26.997-03] ' + APP + ': sessionPaintWalkOpen must ' +
+      'read REPULL.busy — the same collect-in-flight fact the candle busy ' +
+      'note uses — before drawing the begin door');
+  }
+
+  function paintWalk(busy) {
+    const spot = {
+      innerHTML: '',
+      querySelector: function (sel) {
+        const cls = String(sel).replace(/^\./, '');
+        if (this.innerHTML.indexOf(cls) === -1) { return null; }
+        return { addEventListener: function () {}, disabled: false, style: {} };
+      },
+      appendChild: function () {}
+    };
+    const fn = new Function('spot', 'OFFER_COPY', 'escapeHtml', 'REPULL',
+      'sessionWalkBegin', 'sessionWalkSkip',
+      paintSrc + '\nreturn sessionPaintWalkOpen;');
+    fn(spot,
+      { walkBookend: 'BOOKEND', walkQuiet: 'not today' },
+      function (s) { return String(s); },
+      { busy: !!busy },
+      function () {},
+      function () {})(spot);
+    return spot.innerHTML;
+  }
+
+  const idle = paintWalk(false);
+  if (idle.indexOf('session-walk-begin') === -1 ||
+      idle.indexOf('look through them') === -1) {
+    violations.push('[26.997-03] ' + APP + ': idle walk open must still ' +
+      'draw the begin door (session-walk-begin / look through them)');
+  }
+  const held = paintWalk(true);
+  if (held.indexOf('session-walk-begin') !== -1 ||
+      held.indexOf('look through them') !== -1) {
+    violations.push('[26.997-03] ' + APP + ': walk open must omit the ' +
+      'begin door while REPULL.busy — a control the room cannot honor is ' +
+      'not drawn (2026-08-21)');
+  }
+  if (held.indexOf('BOOKEND') === -1) {
+    violations.push('[26.997-03] ' + APP + ': walk open still paints the ' +
+      'shipped bookend while the fetch holds — hide the undrawable door, ' +
+      'not the card');
+  }
+})();
+
+// ---- 26.997-03 Task 3: W-1 wired from her sitting (verbatim fragments) ----
+//
+// ⛔ HER WORDS, 2026-08-28. Agent does not polish. Placeholders N/M/[time]
+// are filled at paint time; the fixed prose is pinned here by contiguous
+// substring. Stop-import ships with COLLECT_STOP_COPY + real route (below).
+(function () {
+  const FRAGS = [
+    'So far the librarain attempted to import ',
+    ' of photos but only ',
+    ' of photos are actually in the room. The librarian is trying to ',
+    'finish the entire import and it will take estimated ',
+    ' mins, your RAM in your computer are being used, and the librarian ',
+    'is not available for any task until this is over.'
+  ];
+  FRAGS.forEach(function (frag) {
+    if (appSrc.indexOf(frag) === -1) {
+      violations.push('[26.997-03-W1] ' + APP + ': missing her W-1 fragment ' +
+        JSON.stringify(frag));
+    }
+  });
+  if (appSrc.indexOf('function longWaitW1Line(') === -1 ||
+      appSrc.indexOf('function appendLongWaitW1(') === -1) {
+    violations.push('[26.997-03-W1] ' + APP + ': longWaitW1Line / ' +
+      'appendLongWaitW1 missing — her sentence has nowhere to land');
+  }
+  // Stop control ships with a real cancel path (26.997 follow-on). Her
+  // words live in COLLECT_STOP_COPY; the button class is collect-stop.
+  if (appSrc.indexOf("var COLLECT_STOP_COPY = 'fully stop the import'") === -1) {
+    violations.push('[26.997-03-W1] ' + APP + ': COLLECT_STOP_COPY must be ' +
+      'her words fully stop the import');
+  }
+  if (appSrc.indexOf('/api/adapter/collect/stop') === -1 ||
+      appSrc.indexOf('stopCollectImport') === -1 ||
+      appSrc.indexOf('collect-stop') === -1) {
+    violations.push('[26.997-03-W1] ' + APP + ': stop-import control must ' +
+      'reach /api/adapter/collect/stop (Don\'t show undrawable controls)');
+  }
+  if (appSrc.indexOf('session-long-wait-stop') !== -1) {
+    violations.push('[26.997-03-W1] ' + APP + ': stray session-long-wait-stop ' +
+      'class — use collect-stop with the real route');
+  }
+  if (!/SESSION_BOUND_MS = 45000/.test(appSrc)) {
+    violations.push('[26.997-03-W1] ' + APP + ': SESSION_BOUND_MS must stay ' +
+      '45000 (S1)');
   }
 })();
 

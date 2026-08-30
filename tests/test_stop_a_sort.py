@@ -2,7 +2,7 @@
 
 ⛔⛔ WHAT THIS EXISTS TO STOP HAPPENING AGAIN. During the 2026-08-26
 walk-through she tapped the candle for a reflection and the room answered
-"the librarian is already sorting — let it finish first." A sort was running
+"the librarian is already sorting. let it finish first." A sort was running
 at batch 87 of 438, with about five and a half hours left. ⭐ THE REFUSAL
 ITSELF WAS GOOD — the room said plainly what was true, in her register — but
 every librarian route the server exposed was enumerated that day (presort,
@@ -14,7 +14,7 @@ asked to do, and which is written down nowhere she could find. She wanted a
 reflection and could not have one.
 
 ⭐⭐ HER RULING, 2026-08-26, and it is a BUTTON SENTENCE, verbatim:
-"stop sorting — it keeps what it's found". The second clause is a promise the
+"stop sorting (it keeps what it's found)". The second clause is a promise the
 server has to keep, and § 3 is what keeps it.
 
 ⚠ COOPERATIVE, NEVER A THREAD KILL — and § 4 is why that matters rather than
@@ -25,7 +25,7 @@ batches and ends through the same four beats the pass-stop ceiling uses.
 
 ⛔ NO NEW FRONT-FACING WORD WAS WRITTEN FOR THIS (D-14), and § 5 pins that.
 The state carries `LIBRARIAN_STOPPED_MSG`, which shipped long before this
-ticket and already reads "stopped partway — everything sorted so far is
+ticket and already reads "stopped partway. everything sorted so far is
 saved, and starting it again carries on from here" — which is exactly what
 her button promises.
 

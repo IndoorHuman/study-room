@@ -16,7 +16,7 @@
  *      sublabel, byte-exact.
  *   2. TWO-PHASE READOUT — runAdapterCollect renders the TCC one-time consent
  *      line (with the single bolded `once`), and renderAdapterProgress uses
- *      the 'reading your notes — N of M.' export phrasing distinct from the
+ *      the 'reading your notes: N of M.' export phrasing distinct from the
  *      shipped copy bar.
  *   3. CALM ERRORS — the -1743 permission copy and the unreachable copy both
  *      exist, mapped from the route's plain message, each with a lowercase
@@ -103,7 +103,7 @@ function must(present, label) {
 // ---- 1. BUTTON + COPY -------------------------------------------------------
 
 ['Bring in from an app on this Mac', 'Apple Notes',
-  'your notes, brought in once — nothing in Notes is ever changed.'
+  'your notes, brought in once. nothing in Notes is ever changed.'
 ].forEach(function (copy) { must(copy, 'button-copy'); });
 
 if (region.indexOf('id="btn-onb-source-notes"') === -1) {
@@ -120,7 +120,7 @@ if (region.indexOf('id="adapter-readout"') === -1) {
 // The TCC one-time consent line, framed as care, with the SINGLE bolded
 // `once` (UI-SPEC — used sparingly). Rendered in pieces around <strong>.
 ['macOS will ask ',
-  ' to let the room reach your Notes — say OK. The room only ever reads; ' +
+  ' to let the room reach your Notes, say OK. The room only ever reads; ' +
   'it never changes a thing.'
 ].forEach(function (copy) { must(copy, 'tcc'); });
 
@@ -136,14 +136,14 @@ if (runCollect.indexOf('checking…') === -1) {
 }
 
 // The NEW export readout phrasing — distinct from the shipped copy bar
-// ('copying your things in — N of M.'), law 6.
-must('reading your notes — ', 'export-readout');
+// ('copying your things in: N of M.'), law 6.
+must('reading your notes: ', 'export-readout');
 const renderProg = functionBody('renderAdapterProgress');
-if (!/reading your notes — '[\s\S]*\bof\b/.test(renderProg) ||
+if (!/reading your notes: '[\s\S]*\bof\b/.test(renderProg) ||
     renderProg.indexOf('snap.done') === -1 ||
     renderProg.indexOf('snap.total') === -1) {
   violations.push('[export-readout] ' + APP + ': renderAdapterProgress must ' +
-    "build the honest 'reading your notes — N of M.' fraction from " +
+    "build the honest 'reading your notes: N of M.' fraction from " +
     'snap.done / snap.total');
 }
 // The copy phase reuses the shipped bar + the pinned close-line verbatim.
@@ -158,7 +158,7 @@ must('you can close this; the room will be ready.', 'export-readout');
 
 ["macOS hasn't given the room permission to reach Notes yet. Open Notes " +
   'once and say OK, then try again.',
-  "Couldn't reach Notes just now — nothing was lost. Try again in a moment."
+  "Couldn't reach Notes just now. Nothing was lost. Try again in a moment."
 ].forEach(function (copy) { must(copy, 'error-copy'); });
 
 // The mapping keys off the route's plain message (permission vs unreachable).
@@ -238,7 +238,7 @@ if (!/PHOTOS_ONE_CLICK\s*\?/.test(onbSources)) {
 
 // Button branch (flag on): the Apple Photos button + never-changed sublabel.
 ['Apple Photos',
-  'your photos, brought in once — nothing in Photos is ever changed.'
+  'your photos, brought in once. nothing in Photos is ever changed.'
 ].forEach(function (copy) { must(copy, 'photos-button'); });
 if (onbSources.indexOf('id="btn-onb-source-photos"') === -1) {
   violations.push('[photos-button] ' + APP + ': the one-click Apple Photos ' +
@@ -249,7 +249,7 @@ if (onbSources.indexOf('id="btn-onb-source-photos"') === -1) {
 // steps (one contiguous literal) + the shipped folder-import link.
 ['Bringing in Apple Photos by hand',
   'A one-click Photos button is coming. For now: in Photos, select the ' +
-  'pictures you want, choose File → Export, and save them to a folder — ' +
+  'pictures you want, choose File → Export, and save them to a folder, ' +
   'then bring that folder in below. Nothing in Photos is changed.',
   'bring that folder in'
 ].forEach(function (copy) { must(copy, 'photos-fallback'); });
@@ -260,20 +260,20 @@ if (onbSources.indexOf('id="btn-photos-fallback-import"') === -1) {
 
 // The export-phase readout noun follows the tapped source (law 6): Photos are
 // 'collected', distinct from the Notes 'reading' line and the shipped copy bar.
-must('collecting your photos — ', 'photos-readout');
-if (!/collecting your photos — '[\s\S]*\bof\b/.test(renderProg) ||
+must('collecting your photos: ', 'photos-readout');
+if (!/collecting your photos: '[\s\S]*\bof\b/.test(renderProg) ||
     renderProg.indexOf('ACTIVE_ADAPTER') === -1) {
   violations.push('[photos-readout] ' + APP + ': renderAdapterProgress must ' +
-    "build the honest 'collecting your photos — N of M.' fraction for the " +
+    "build the honest 'collecting your photos: N of M.' fraction for the " +
     'Photos source (keyed on ACTIVE_ADAPTER.source)');
 }
 
 // The TCC one-time note + both error lines swap the noun to Photos.
-must(' to let the room reach your Photos — say OK. The room only ever reads; ' +
+must(' to let the room reach your Photos, say OK. The room only ever reads; ' +
   'it never changes a thing.', 'photos-tcc');
 ["macOS hasn't given the room permission to reach Photos yet. Open Photos " +
   'once and say OK, then try again.',
-  "Couldn't reach Photos just now — nothing was lost. Try again in a moment."
+  "Couldn't reach Photos just now. Nothing was lost. Try again in a moment."
 ].forEach(function (copy) { must(copy, 'photos-error'); });
 
 // ---- 7. PICKER REMEMBERS THE KEPT-OUT FOLDERS (cross-AI review HIGH-2) ------
@@ -311,7 +311,7 @@ if (/class="notes-folder-box" checked /.test(pickerBody)) {
 // not?" — and its "nothing in your library changed" was proven false by a
 // run that durably set 19 videos aside. Her chosen line leads with the
 // ending. The branch's TOKEN key is unchanged below.
-const TOTAL_FAILURE_LINE = 'The room finished — but the pictures it went ' +
+const TOTAL_FAILURE_LINE = 'The room finished, but the pictures it went ' +
   "for couldn't be brought in this time. They aren't lost, and it will try " +
   'them again the next time you bring photos in.';
 must(TOTAL_FAILURE_LINE, 'photos-total-failure');
@@ -343,10 +343,10 @@ if (errCopy.indexOf(TOTAL_FAILURE_LINE) === -1) {
 // The honest partial: one calm line, singular and plural, carrying only what
 // THIS run could not bring back — never a count of what is still outside the
 // room (the owner's standing veto on backlog numbers).
-const PARTIAL_SINGULAR = "1 picture couldn't be brought in this time — it " +
+const PARTIAL_SINGULAR = "1 picture couldn't be brought in this time. It " +
   "isn't lost, and the room will try it again the next time you bring " +
   'photos in.';
-const PARTIAL_PLURAL = " pictures couldn't be brought in this time — they " +
+const PARTIAL_PLURAL = " pictures couldn't be brought in this time. They " +
   "aren't lost, and the room will try them again the next time you bring " +
   'photos in.';
 [PARTIAL_SINGULAR, PARTIAL_PLURAL].forEach(function (copy) {
@@ -396,7 +396,7 @@ if (paintPartial.indexOf("'apple-photos'") === -1) {
 // fault of hers (law 3) — and a video must NEVER be counted as a picture that
 // could not be brought in.
 
-const VIDEO_SINGULAR = 'The room shows pictures and writing, not video yet — ' +
+const VIDEO_SINGULAR = 'The room shows pictures and writing, not video yet, ' +
   'so 1 video stayed in Photos, right where it is.';
 const VIDEO_PLURAL = ' videos stayed in Photos, right where they are.';
 [VIDEO_SINGULAR, VIDEO_PLURAL].forEach(function (copy) {
@@ -449,7 +449,7 @@ if (paintPartial.indexOf('adapterVideoLine') === -1) {
 // that ARRIVED, and it must never be counted among the ones that did not.
 
 const RESIZED_SINGULAR = 'The room keeps pictures small enough to open ' +
-  'quickly — so 1 picture was made smaller on the way in. Nothing else was ' +
+  'quickly, so 1 picture was made smaller on the way in. Nothing else was ' +
   'changed.';
 const RESIZED_PLURAL = ' pictures were made smaller on the way in. Nothing ' +
   'else was changed.';
@@ -873,13 +873,16 @@ runCase('the-collect-control-renders-in-both-states-and-ignores-the-' +
 runCase('the-last-import-line-says-when-from-the-stored-timestamp',
   function () {
     // Her recorded row is the SHAPE, split structurally so no sentence is
-    // typed into this suite: `last import — {when} — brought in …`.
-    const parts = COPY_EXTRACT.C12.split(' — ');
-    caseAssert(parts.length === 3, 'her recorded last-import row does not ' +
-      'have the three-part shape this assertion derives from: ' +
-      JSON.stringify(COPY_EXTRACT.C12));
-    const head = parts[0] + ' — ';
-    const mid = ' — ' + parts[2].replace('…', '');
+    // typed into this suite: `last import, {when}: brought in …` (re-ruled
+    // 2026-08-30: the two dashes became a comma and a colon).
+    const c12 = COPY_EXTRACT.C12;
+    const hi = c12.indexOf(', ');
+    const ti = c12.indexOf(': ');
+    caseAssert(hi !== -1 && ti > hi, 'her recorded last-import row does not ' +
+      'have the head/when/tail shape this assertion derives from: ' +
+      JSON.stringify(c12));
+    const head = c12.slice(0, hi + 2);
+    const mid = c12.slice(ti).replace('…', '');
     const h = reportHarness();
     // A timestamp a browser clock can never produce: it is in the past and it
     // is not today. Reading Date.now() instead of the stored value reddens
@@ -969,7 +972,7 @@ runCase('every-shipped-sentence-equals-her-recorded-row', function () {
 // --- the shipped control case, green before and after this plan -------------
 runCase('control-shipped-notes-sublabel-byte-present', function () {
   caseAssert(appSrc.indexOf(
-    'your notes, brought in once — nothing in Notes is ever changed.') !== -1,
+    'your notes, brought in once. nothing in Notes is ever changed.') !== -1,
     'the shipped Apple Notes sublabel is missing from the client');
 });
 

@@ -10,9 +10,9 @@ description: >-
 
 Orchestrate `tools/update_room.py` only — do not duplicate replace logic.
 
-Works on **any** coding agent. Install this file from
-`skills/visualroom-update/SKILL.md` in the Study Room repo (see
-`skills/README.md` for paths).
+Works on **any** coding agent. Bundled in every download under `skills/` —
+install once with `python3 tools/install_agent_skills.py` (see
+`skills/README.md`).
 
 ## When to use
 

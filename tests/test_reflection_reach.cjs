@@ -53,9 +53,9 @@ const HER_LINES = {
   SESSION_REACH_ASK: 'shall i stay recent, or go further back?',
   SESSION_REACH_TYPE: 'tell me how far back to go.',
   SESSION_REACH_UNREADABLE:
-    "i can't read that as a length — try months or years.",
+    "i can't read that as a length. try months or years.",
   SESSION_REACH_SET_ASIDE:
-    'some things here have no date i can trust — i left those out.',
+    'some things here have no date i can trust; i left those out.',
   SESSION_REACH_RECENT_LABEL: 'stay recent',
   SESSION_REACH_BACK_LABEL: 'go further back',
   // T-7 — the button that SENDS. ⛔ A SEPARATE LABEL from T-5 on purpose.
@@ -87,15 +87,16 @@ Object.keys(HER_LINES).forEach(function (name) {
   }
 });
 
-// ⚠ THE EM DASHES ARE HERS. A smoothed hyphen is a reword.
-console.log('2. her em dashes survive');
-ok(HER_LINES.SESSION_REACH_UNREADABLE.indexOf('—') !== -1
-  && APP.indexOf("i can't read that as a length — try months or years.")
+// ⚠ Re-ruled by the owner 2026-08-30: no em dash anywhere in the room's
+// copy. The punctuation below is hers now; a dash creeping back is the reword.
+console.log('2. her punctuation survives');
+ok(HER_LINES.SESSION_REACH_UNREADABLE.indexOf('—') === -1
+  && APP.indexOf("i can't read that as a length. try months or years.")
     !== -1,
-  'the unreadable line keeps its EM DASH in app.js');
+  'the unreadable line carries no EM DASH in app.js (re-ruled 2026-08-30)');
 ok(APP.indexOf(
-  'some things here have no date i can trust — i left those out.') !== -1,
-  'the set-aside line keeps its EM DASH in app.js');
+  'some things here have no date i can trust; i left those out.') !== -1,
+  'the set-aside line reads as re-ruled in app.js');
 
 // ---- 3. ⛔ NO DEFAULT LENGTH ANYWHERE -----------------------------------
 console.log('3. no length was chosen for her');

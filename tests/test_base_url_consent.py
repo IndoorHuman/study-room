@@ -974,7 +974,7 @@ class BaseConsentCase(unittest.TestCase):
                 out.count(getattr(server, const)), 0,
                 const + " printed in a setup where nothing was redirected "
                 "(law 6)")
-        self.assertIn("The Study Room — setup", out,
+        self.assertIn("The Study Room: setup", out,
                       "the control failed: --setup produced no output at all, "
                       "so counting zero sentences proves nothing")
 

@@ -61,9 +61,13 @@ variable, through this module's UNMODIFIED `_EXPORT_SCRIPT`:
     ~/Downloads/<derived>        rc 0, stderr empty, files produced 0
 
 So the export root is derived under the user's Pictures directory. It is
-DERIVED from `Path.home()` and never a spelled path (D-19: a repair that
-honoured its prohibition to the letter still leaked a home path into a file
-that would ship). **There is deliberately NO fallback to a temporary directory
+DERIVED from the signed-in account's home directory — never a spelled path
+(D-19: a repair that honoured its prohibition to the letter still leaked a
+home path into a file that would ship) — and deliberately NOT from ``Path.home()``
+when ``$HOME`` has been swapped (26.997 P3: a throwaway measure ``HOME`` under
+``/tmp`` made Photos write to ``/tmp/…/Pictures/…``, which returned rc 0 with
+zero files for ~11k ids while real ``~/Pictures/StudyRoom-import`` landed
+13,475). **There is deliberately NO fallback to a temporary directory
 when the export root cannot be created or written — a silent fallback would
 restore this defect exactly.** It raises, fatally, and exports nothing.
 
@@ -98,6 +102,7 @@ law 3, reward presence, never punish absence.
 """
 import atexit
 import os
+import pwd
 import shutil
 import subprocess
 import tempfile
@@ -204,12 +209,22 @@ _TOTAL_FAILURE_MSG = (
     "your room was changed. Nothing was lost; you can try the candle again.")
 
 
+def _account_home():
+    """The signed-in user's home directory — derived, never spelled (D-19).
+
+    ``Path.home()`` follows ``$HOME``, which throwaway measure harnesses swap
+    under ``/tmp/…``; Photos.app only writes renditions into the real account
+    ``~/Pictures/…`` tree (26.997 P3). Passwd is the account home regardless
+    of a swapped ``HOME``."""
+    return Path(pwd.getpwuid(os.getuid()).pw_dir)
+
+
 def _export_root_parent():
-    """The directory Photos will actually write into, DERIVED from the user's
+    """The directory Photos will actually write into, DERIVED from the account
     home — never a spelled path (D-19). Returns the PARENT container only; the
     per-run root is an `mkdtemp` inside it, so two collects can never share one
     and freshness is guaranteed by mkdtemp rather than by a name."""
-    return Path.home() / "Pictures" / _EXPORT_ROOT_DIRNAME
+    return _account_home() / "Pictures" / _EXPORT_ROOT_DIRNAME
 
 
 # --- AppleScript, built from CONSTANTS only (no photo id ever enters) --------

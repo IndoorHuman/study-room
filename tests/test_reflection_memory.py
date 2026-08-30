@@ -420,7 +420,7 @@ class CloseTimeWriterCase(unittest.TestCase):
         self.seed_ledger(["the ferry"])
         self.seed_session([
             {"who": "user", "text": "it read like an essay about me"},
-            {"who": "librarian", "text": "woven in — the paper holds it now."},
+            {"who": "librarian", "text": "woven in. the paper holds it now."},
             {"who": "user", "text": "add the bit about the ferry"}])
         status, data = self.close("pass")
         self.assertEqual(status, 200, "the close failed: " + repr(data))
@@ -1147,10 +1147,10 @@ HER_SURFACE_HEADING = "the librarian's memory of you"
 # arrived at by two different routes and a slip on either route goes red.
 # ⛔ Never "fix" one of these by pasting the other in.
 HER_SURFACE_LINE_1 = (
-    "Your own sentences \u2014 shown in full, with a remove this line "
+    "Your own sentences, shown in full, with a remove this line "
     "control next to each.")
 HER_SURFACE_LINE_2 = (
-    "Reflections that landed \u2014 just the reflection's name, and whether "
+    "Reflections that landed, just the reflection's name, and whether "
     "you kept it or passed on it.")
 
 # ⛔ THE EIGHT STRINGS SHE RULED ON 2026-08-19 (OC-2, OC-3, OC-4a/b/c, OC-6,
@@ -1209,7 +1209,7 @@ HER_GONE = "that line is gone."
 # closes the question of whether she would keep them. If either is ever
 # reworded, that rewording is a front-facing sentence and is HERS — it goes
 # on the wording pass in `26.995-OWED-TO-OWNER.md`, never into a commit.
-SHIPPED_FAILURE_LINE = ("That choice did not save — the room may not be "
+SHIPPED_FAILURE_LINE = ("That choice did not save; the room may not be "
                         "reachable.")
 SHIPPED_RETRY_LABEL = "try saving again"
 
@@ -2502,7 +2502,7 @@ class MemorySurfaceCase(unittest.TestCase):
         self.assertEqual(
             sorted(r["text"] for r in hers),
             ["it read like an essay about me", "say more"],
-            "'Your own sentences — shown in full': every stored sentence, "
+            "'Your own sentences, shown in full': every stored sentence, "
             "whole, nothing trimmed and nothing dropped")
         # ⛔⛔ 'WITH A REMOVE THIS LINE CONTROL NEXT TO EACH' — MEASURED ON
         # THE RENDER, BY VALUE, AT FOUR FIXTURE SIZES INCLUDING ZERO.
@@ -3235,7 +3235,7 @@ MUTANTS = (
     # something an agent prefers. This plants exactly that edit.
     ("M34 one of her two adopted lines is tightened by an agent",
      "app.js",
-     "'Your own sentences — shown in full, with a remove this line control '",
+     "'Your own sentences, shown in full, with a remove this line control '",
      "'Your sentences, in full, each with a remove control '"),
     # ⛔⛔ M32 IS THE REPUDIATION MUTANT'S TWIN, and it re-introduces the exact
     # defect a green suite shipped: the prompt's evidence floor applied to the

@@ -520,10 +520,10 @@ function mustNotContain(body, needle, tag, why) {
     'which model writes your reflections and desk notes',
     'opus reads most closely and takes longest; haiku is quickest.',
     ' is writing them.',
-    "couldn't save — try again.",
+    "couldn't save. try again.",
     'a setting in your shell is using ',
     ' right now instead.',
-    "something in your shell asked for a model i don't have — using ",
+    "something in your shell asked for a model i don't have; using ",
     ' instead.',
     ' is the model in use right now.'
   ];

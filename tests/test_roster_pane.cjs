@@ -2593,10 +2593,11 @@ group('copy (the failure line is LIFTED from shipped bytes, not re-typed)',
         'vacuity this group exists to refuse');
       return;
     }
-    if (FAIL_LINE.indexOf('—') === -1) {
-      violations.push('[copy] the lifted line carries no EM DASH (U+2014): ' +
-        JSON.stringify(FAIL_LINE) + ' — the shipped sentence uses one, and a ' +
-        'hyphen in its place is a reword');
+    // Re-ruled by the owner 2026-08-30: no em dash anywhere in the room's copy.
+    if (FAIL_LINE.indexOf('—') !== -1) {
+      violations.push('[copy] the lifted line carries an EM DASH (U+2014): ' +
+        JSON.stringify(FAIL_LINE) + ' — the 2026-08-30 re-ruling removed ' +
+        'every one');
     }
     if (FAIL_LINE.indexOf('’') !== -1) {
       violations.push('[copy] the lifted line carries a CURLY apostrophe ' +
@@ -3026,10 +3027,10 @@ const C1 = 'private folders';
 const C2 = 'These folders stay private. The librarian never reads them, ' +
   'and nothing from them appears in the room until you choose to release ' +
   'a specific item.';
-const C3 = 'Kept private from now on — and anything already here from ' +
+const C3 = 'Kept private from now on, and anything already here from ' +
   'that folder is set aside too.';
 const C4 = 'The librarian can read that folder again. Things already set ' +
-  'aside stay set aside — you can bring any of them back yourself, one at ' +
+  'aside stay set aside; you can bring any of them back yourself, one at ' +
   'a time.';
 
 // ---------------------------------------------------------------------------
@@ -3073,7 +3074,7 @@ function liftShipped(body, re, label) {
 const SEAM_SRC = extractFn(APP_SRC, 'renderRosterEditor');
 
 // R1 — the empty state. ⚠ SPLIT IN THE SHIPPED SOURCE across a line break
-// ('nothing flagged yet — add a ' + 'folder to keep private'). Carries an EM
+// ('nothing flagged yet. add a ' + 'folder to keep private'). Carries an EM
 // DASH. Where it ships: the seam's zero-length branch.
 const R_EMPTY = liftShipped(SEAM_SRC,
   /escapeHtml\('(nothing flagged yet[^']*)'\)/, 'the empty state');
@@ -4187,7 +4188,7 @@ group('consequenceWhole (each of her sentences is the WHOLE of the paragraph ' +
 // The mutation this refuses is not hypothetical. The verification planted
 // ' your folder is now private.' onto the paragraph `rosterWriteFailed`
 // writes, proved it semantically live on the driven path — the rendered slot
-// really reads "couldn't save — try again. your folder is now private." — and
+// really reads "couldn't save. try again. your folder is now private." — and
 // the suite returned rc=0 with all 37 groups green and no additional failure
 // anywhere in the repo.
 //
@@ -5446,7 +5447,7 @@ group('hostsClaimDirect (a repaint through renderRosterHosts invalidates a ' +
 //
 // An OLDER write that FAILS, landing after a NEWER write already succeeded and
 // repainted. Its sentence would sit under the newer act's result and be read as
-// being about it — "couldn't save — try again." against a change she just
+// being about it — "couldn't save. try again." against a change she just
 // watched land.
 //
 // ⛔⛔ COUNTED, NEVER CHECKED FOR EMPTINESS. A repaint RESETS the note slot

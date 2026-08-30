@@ -33,7 +33,7 @@
     back to you when you visit. Everything stays on your computer.</p>
 
     <div class="card">
-      <label for="library-path-input">Your library folder — where your
+      <label for="library-path-input">Your library folder: where your
       things will live. A plain folder you can open anytime.</label>
       <input id="library-path-input" type="text" value="~/StudyRoom">
       <p><button id="btn-library" class="btn" type="button">Use this
@@ -43,7 +43,7 @@
 
     <div class="card">
       <label for="source-path-input">A folder to bring things in from.
-      Nothing in that folder is ever changed — the room keeps its own
+      Nothing in that folder is ever changed; the room keeps its own
       copies.</label>
       <input id="source-path-input" type="text"
              placeholder="for example: ~/Documents/notes">
@@ -85,7 +85,7 @@
          agent may reword it. It rides the screen itself (both doors in —
          the stack and the Manage grind — reach this screen; the candle
          sitting's own walk never does). -->
-    <p id="blessing-candle-first" style="color:var(--ink-soft)">the librarian recommends a sitting at the candle first — it looks through what's new with you before you bless.</p>
+    <p id="blessing-candle-first" style="color:var(--ink-soft)">the librarian recommends a sitting at the candle first: it looks through what's new with you before you bless.</p>
     <!-- 22-uat: the decision bar sits ABOVE the content and stays put
          (sticky) while long content scrolls in its own region below —
          the judgment is always in reach, whatever the length (H9). -->
@@ -93,7 +93,7 @@
       <p id="blessing-progress"></p>
       <div id="blessing-verdicts">
         <button id="btn-bless-safe" class="btn"
-          type="button">joyful — bring it back</button>
+          type="button">joyful: bring it back</button>
         <button id="btn-bless-never" class="btn btn-never"
           type="button">put it away for good</button>
         <button id="btn-bless-notnow" class="btn"
@@ -112,7 +112,7 @@
     <h2>Your shelf</h2>
     <!-- 22-uat: the shelf says what it is and how it opens; Q2 and the
          pile link sit above the cards, in reach without scrolling. -->
-    <p id="shelf-subtitle">a few things you chose to meet again — open one, or just look.</p>
+    <p id="shelf-subtitle">a few things you chose to meet again. open one, or just look.</p>
     <div id="q2-habit-anchor"></div>
     <p><button id="shelf-pile-link" type="button"
       style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font:inherit;text-decoration:underline">look through the pile</button></p>
@@ -589,6 +589,16 @@
           <span class="room-blockout" style="background:var(--stone)"></span>
           <span class="room-label">window</span>
           <img src="assets/room/decor-window.png?v=26.5-06" alt="">
+        </button>
+        <!-- impact-metrics 05/08: wall survey invite. Hidden until
+             /api/status.survey_url is set (library survey_url.txt).
+             Click opens the Form in a new tab — never moment-triggered. -->
+        <button type="button" id="room-obj-survey-poster" hidden
+          class="room-object room-decor has-sprite" aria-label="survey"
+          data-cls="wall" style="--x:300;--y:36;--w:24;--h:20">
+          <span class="room-blockout" style="background:var(--green)"></span>
+          <span class="room-label">survey</span>
+          <img src="assets/room/decor-art.png" alt="">
         </button>
         <!-- 26.5-06 (SC-3): the bench — the window seat split OUT of the
              window sprite into its own arrangeable object. A passive

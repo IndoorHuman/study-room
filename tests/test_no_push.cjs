@@ -403,7 +403,7 @@ function orderCheck(file, src, earlier, later, why) {
   // The underlying states are unchanged (blessed / never_show).
   // 26.996-05 (#110): the forever tap now reads her ruling verbatim —
   // `put it away for good` — at all three visible sites and in Manage.
-  ['joyful — bring it back', 'put it away for good', 'not now',
+  ['joyful: bring it back', 'put it away for good', 'not now',
     "that's enough for today"].forEach(function (copy) {
     if (html.indexOf(copy) === -1) {
       violations.push("[layout] index.html: blessing copy missing: '" +
@@ -430,7 +430,7 @@ function orderCheck(file, src, earlier, later, why) {
 
   // The shelf says what it is and how it opens: one quiet subtitle line
   // under the h2, in the room's register.
-  if (html.indexOf('a few things you chose to meet again — open one, ' +
+  if (html.indexOf('a few things you chose to meet again. open one, ' +
       'or just look.') === -1) {
     violations.push('[layout] index.html: the shelf subtitle line is ' +
       'missing');
@@ -501,7 +501,7 @@ function orderCheck(file, src, earlier, later, why) {
     // cannot drift; the SEPARATE 26.94-03 block far below pins that it is
     // rendered only when the server says the toolchain is absent, and
     // that the browser is handed a boolean rather than a path.
-    'Reading photos — needs Xcode Command Line Tools — xcode-select --install'
+    'Reading photos needs Xcode Command Line Tools: xcode-select --install'
   ].forEach(function (label) {
     if (app.indexOf(label) === -1) {
       violations.push("[layout] app.js: manage section string missing: '" +
@@ -659,7 +659,7 @@ function orderCheck(file, src, earlier, later, why) {
   ['photos gather into an album.',
     'photos and notes stay in the pile and shelf only.',
     'turn this off', 'turn this on',
-    "couldn't save — try again."
+    "couldn't save. try again."
   ].forEach(function (copy) {
     if (app.indexOf(copy) === -1) {
       violations.push("[layout] app.js: consolidation row copy missing: '" +
@@ -1321,8 +1321,8 @@ function visionFenceCallViolations(lib) {
 // declined deferring it; the surface is a later plan's. Pinning it now is
 // what stops the value drifting between approval and use.
 const CLT_MANAGE_COPY =
-  'Reading photos — needs Xcode Command Line Tools — xcode-select --install';
-const CLT_STAGE_COPY = 'reading your photographs — ';
+  'Reading photos needs Xcode Command Line Tools: xcode-select --install';
+const CLT_STAGE_COPY = 'reading your photographs: ';
 
 // `pyDefBody` anchors on column 0, and this one is a METHOD. Same shape,
 // sliced at its own indent so a sibling method ends it.
@@ -1728,7 +1728,7 @@ function docAnchorViolations(docFlat) {
   // company, which matches her approved setup disclosure's own vocabulary,
   // and she dropped "try again in a moment": a code fault is not a passing
   // condition, so the remedy was a promise nobody could keep.
-  ["the librarian couldn't reach the model just now — nothing was lost."
+  ["the librarian couldn't reach the model just now. nothing was lost."
   ].forEach(function (copy) {
     if (py.indexOf(copy) === -1) {
       violations.push("[librarian] server.py: pinned fail-open copy " +
@@ -1810,13 +1810,13 @@ function docAnchorViolations(docFlat) {
   // presence pin without adding the ban is how a deleted claim comes back.
   ["this reads what's newly arrived, on your own computer. nothing is sent anywhere and nothing is charged.",
     "your never-show, retired and trigger-marked things aren't read at all.",
-    'the librarian can pre-sort what just arrived — want suggestions?',
+    'the librarian can pre-sort what just arrived. want suggestions?',
     'sort by titles and dates', 'read and sort everything',
-    'just titles and dates', 'yes — read and sort', 'sort the pile',
+    'just titles and dates', 'yes: read and sort', 'sort the pile',
     'the librarian',
-    'these look joyful — worth a look?',
+    'these look joyful. worth a look?',
     'these look like receipts and paperwork.',
-    'these might be heavy — set aside unshown?',
+    'these might be heavy. set aside unshown?',
     'set this aside without showing it?', 'set it aside',
     'set aside unshown', 'noted',
     'sorting — batch ',
@@ -1839,9 +1839,9 @@ function docAnchorViolations(docFlat) {
   // than merely unpinned. The replacement is the OWNER'S OWN WORDS, from
   // #77's 26.99 slice (26.99-COPY.md §S-01a/S-01b): ⛔ no agent wrote,
   // completed, tidied or punctuated a character of it.
-  ['the librarian is already sorting — let it finish first.',
+  ['the librarian is already sorting. let it finish first.',
     'The librarian has done enough to understand you. Nothing was lost.',
-    "your Claude plan's usage window may be full — nothing is lost; run the librarian again and it picks up where it left off."
+    "your Claude plan's usage window may be full. nothing is lost; run the librarian again and it picks up where it left off."
   ].forEach(function (copy) {
     if (py.indexOf(copy) === -1) {
       violations.push("[librarian] server.py: pinned guardrail line " +
@@ -1981,17 +1981,17 @@ function docAnchorViolations(docFlat) {
   const html = readSource('index.html');
 
   // (1) the disclosure + settings copy, byte-exact over app.js.
-  ['nothing here ever leaves this computer. when a job needs a big model, a copy of the text is sent to be read and the answer comes back — the thing itself stays where it is, and stays yours.',
-    'your never-show, retired, and trigger-marked items stay on this machine — not even their titles are sent.',
+  ['nothing here ever leaves this computer. when a job needs a big model, a copy of the text is sent to be read and the answer comes back. the thing itself stays where it is, and stays yours.',
+    'your never-show, retired, and trigger-marked items stay on this machine; not even their titles are sent.',
     // ⚠ THREE MEMBERS LEFT THIS ROSTER IN 26.93-10 — the login line, the
     // free-usage line and the sign-in line. All three are BANNED in
     // RETIRED_CLAIMS above rather than merely unpinned: this pane is the
     // always-on Manage surface, which is the most prominent place in the room
     // a false statement about her money could stand.
-    'using your API key — usage is billed to that key.',
+    'using your API key; usage is billed to that key.',
     'let the librarian in',
-    'the librarian is off — the room is fully yours alone.',
-    'the librarian is in — it suggests, you decide.',
+    'the librarian is off: the room is fully yours alone.',
+    'the librarian is in: it suggests, you decide.',
     'last sort: titles and dates only.',
     'last sort: full reading, by your ok that time.'
   ].forEach(function (copy) {
@@ -2058,8 +2058,8 @@ function docAnchorViolations(docFlat) {
 
   // (1) the desk reveal + check-in copy, byte-exact over app.js.
   ["there's a note on the desk.",
-    "not this — don't ask again",
-    "yes — I'll set that up",
+    "not this: don't ask again",
+    "yes: I'll set that up",
     'ask for a note',
     'writing…',
     'the librarian left a note on the desk.',
@@ -2097,8 +2097,8 @@ function docAnchorViolations(docFlat) {
   });
 
   // (4) the server's pinned plain-words lines, each ONE source line.
-  ['the librarian is already writing — give it a moment.',
-    'nothing blessed to draw from yet — the note comes from what you call safe.'
+  ['the librarian is already writing. give it a moment.',
+    'nothing blessed to draw from yet. the note comes from what you call safe.'
   ].forEach(function (copy) {
     if (py.indexOf(copy) === -1) {
       violations.push("[librarian] server.py: pinned note line " +
@@ -2288,7 +2288,7 @@ function stripHtmlComments(src) {
     // index.html — the two room chrome links, a blessing verb, a heading.
     { file: 'index.html', s: 'back to the room' },
     { file: 'index.html', s: 'manage your library' },
-    { file: 'index.html', s: 'joyful — bring it back' },
+    { file: 'index.html', s: 'joyful: bring it back' },
     { file: 'index.html', s: 'Your photos' }
   ];
 
@@ -2378,7 +2378,7 @@ function stripHtmlComments(src) {
     // the Manage sync-back toggle label + its plain disclosure (D-11/D-12)
     'write my notes back to my vault files',
     'a note you leave here is added under `## Comments` in the original ' +
-      'file, timestamped. Nothing else is touched — every line above it ' +
+      'file, timestamped. Nothing else is touched: every line above it ' +
       'stays exactly as you wrote it.'
   ].forEach(function (copy) {
     if (app.indexOf(copy) === -1) {
@@ -2554,8 +2554,8 @@ function stripHtmlComments(src) {
 
   [
     // the D-10 warm nothing-new line + the one static failure line
-    'the library is settled — nothing waiting today.',
-    'the librarian could not finish just now — nothing is lost; the ' +
+    'the library is settled. nothing waiting today.',
+    'the librarian could not finish just now. nothing is lost; the ' +
       'desk is as it was.',
     // the D-03 held-draft offer (26.7-05) — once, ever
     'pick up where we left off?',
@@ -2565,7 +2565,7 @@ function stripHtmlComments(src) {
     // the D-06 write-back disclosure (26.7-04)
     'when this is on, a reflection you keep is also written into ' +
       "your vault as one NEW note in Claude's observation/Journal " +
-      'analysis — nothing already there is ever touched.'
+      'analysis. nothing already there is ever touched.'
   ].forEach(function (copy) {
     if (app.indexOf(copy) === -1) {
       violations.push("[session-copy] app.js: pinned session copy " +
@@ -2671,7 +2671,7 @@ function stripHtmlComments(src) {
   // is what a later agent reads if these sentences move again.
   [
     ['C-2', 'walkBookend',
-      "walkBookend: 'something you brought back led here — a " +
+      "walkBookend: 'something you brought back led here: a " +
       "few from the same weeks, other years.'"],
     ['C-6', 'walkQuiet', "walkQuiet: 'not today'"]
   ].forEach(function (row) {

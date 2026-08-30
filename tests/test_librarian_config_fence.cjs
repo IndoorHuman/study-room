@@ -1131,12 +1131,12 @@ const ASK_TEXT = 'stop tidying my vault';
   // the shared function rather than minting its own words. All three must
   // hold; any one of them going missing is the card starting to speak a second
   // word for a consequence Manage already names.
-  if ((app.match(/' — brought in\.'/g) || []).length !== 1) {
+  if ((app.match(/': brought in\.'/g) || []).length !== 1) {
     violations.push('[routing] app.js: the shipped connected-apps ' +
       'before-state sentence must exist as exactly ONE literal ' +
       "(ASK_SOURCE_BROUGHT_IN) — a second copy is a twin that can drift");
   }
-  if (app.indexOf("var ASK_SOURCE_BROUGHT_IN = ' — brought in.';") === -1) {
+  if (app.indexOf("var ASK_SOURCE_BROUGHT_IN = ': brought in.';") === -1) {
     violations.push('[routing] app.js: the shipped connected-apps ' +
       'before-state sentence is no longer pinned byte-exactly on ' +
       'ASK_SOURCE_BROUGHT_IN — the card renders words Manage already says, ' +
@@ -1321,8 +1321,8 @@ const ASK_TEXT = 'stop tidying my vault';
 //     room SAYS, not about what it spends.
 
 (function () {
-  const D04_HEAD = 'a filter you set — ';
-  const D04_TAIL = ' — is hiding some of what you welcomed. want it off?';
+  const D04_HEAD = 'a filter you set, ';
+  const D04_TAIL = ', is hiding some of what you welcomed. want it off?';
 
   // (6a) the copy is byte-exact, carries NO number, and carries no count
   // word. A number here would be a count of hidden things, and this surface
@@ -3733,9 +3733,9 @@ const ASK_TEXT = 'stop tidying my vault';
 
   // ---- her three lines, byte-exact, typed from the #105 record ----------
   const HER_NAME = 'links to your own private notes';
-  const HER_ON = 'this is on — a private note named in a reflection ' +
+  const HER_ON = 'this is on: a private note named in a reflection ' +
     'becomes a door you can open, just to read, on this device only.';
-  const HER_OFF = 'this is off — a private note named in a reflection ' +
+  const HER_OFF = 'this is off: a private note named in a reflection ' +
     'stays plain words, and nothing opens.';
   bad(app.indexOf("display_fence_open: '" + HER_NAME + "'") === -1,
     'app.js: ASK_SETTING_NAME does not carry her card name byte-exactly ' +

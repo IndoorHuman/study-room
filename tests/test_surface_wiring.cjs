@@ -483,7 +483,7 @@ if (cover) {
   // ⚠⚠ 26.95-03 (#92): AND IT MUST ARM THE READER. The pin above proves the
   // import STARTS; nothing proved anyone ever looked at it again. For the
   // whole life of this screen `doVaultImport` painted the first progress
-  // frame and never polled — "copying your things in — 0 of N" for ever,
+  // frame and never polled — "copying your things in: 0 of N" for ever,
   // while the import completed correctly underneath — and every suite in
   // this repo was green throughout, this group included.
   //

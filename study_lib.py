@@ -1722,7 +1722,8 @@ def refresh_item(item, path, kind, library_root, born_trigger=False,
 
 def import_folder(src_root, library_root, consolidation=None,
                   progress_cb=None, vault_root=None, roster=None,
-                  superseded_cb=None, staged_from=None) -> dict:
+                  superseded_cb=None, staged_from=None,
+                  should_stop=None) -> dict:
     """Import a source folder into the app-owned library (SRM-02, SRM-08).
 
     detect adapter -> units -> hash -> persist, one atomic save at the end:
@@ -1768,6 +1769,9 @@ def import_folder(src_root, library_root, consolidation=None,
         are idempotent on re-import
       - progress_cb, when given, is called once per processed unit with
         (done, total) — purely additive; omitting it changes nothing
+      - should_stop, when given, is called once per processed unit with no
+        arguments; if it raises, the import aborts (26.997 cooperative
+        stop). Omitting it changes nothing.
       - superseded_cb, when given, is called ONCE at the end with the sorted
         list of ids whose MATERIAL moved: a note whose words changed (never
         one where only whitespace moved, #94 ruling 7) or a picture whose
@@ -2090,6 +2094,8 @@ def import_folder(src_root, library_root, consolidation=None,
                     # is a processed unit like any other — a progress bar that
                     # stalled on a re-import would be lying about the work.
                     done += 1
+                    if should_stop is not None:
+                        should_stop()
                     if progress_cb is not None:
                         progress_cb(done, total)
                     continue
@@ -2244,6 +2250,8 @@ def import_folder(src_root, library_root, consolidation=None,
                     store["items"][item_id] = _inherit_judgment(stamp_facets(item))
                     report["imported"] += 1
         done += 1
+        if should_stop is not None:
+            should_stop()
         if progress_cb is not None:
             progress_cb(done, total)   # once per processed unit
 
@@ -2859,6 +2867,203 @@ def write_reflection_to_vault(vault_root, title, text, reflects_paths,
         body += "\n"
     atomic_write_bytes(str(final), body.encode("utf-8"))
     return str(final.relative_to(root))
+
+
+# ---------------------------------------------------------------------------
+# ---- collect-time processing: normalize + v3-lite frontmatter (27-01) ------
+# The FOURTH disclosed writer — annotates the ROOM's own `items/<id>.md`
+# copies only (Seam B). NEVER touches the user's source folder. NEVER calls
+# run_librarian_call (rules-only, D-18). In-process Python only — no skill
+# subprocess (Pitfall 1). Body word-sequence stays byte-identical after
+# whitespace collapse (D-19 / law 4); wall reformatting = line breaks only.
+# ---------------------------------------------------------------------------
+
+_RELATED_TAIL_RE = re.compile(
+    r"\n##[ \t]+Related\b[^\n]*\n[\s\S]*\Z"
+)
+
+
+def _split_md_frontmatter(md_text):
+    """Return (fm_block_or_None, body). Unclosed opening fence → no FM."""
+    text = str(md_text or "")
+    if not text.startswith("---"):
+        return None, text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None, text
+    nl = text.find("\n", end + 1)
+    if nl == -1:
+        return text, ""
+    return text[: nl + 1], text[nl + 1 :]
+
+
+def _strip_trailing_related(body):
+    """Drop a trailing `## Related` scaffolding block if present."""
+    text = str(body or "")
+    return _RELATED_TAIL_RE.sub("", text)
+
+
+def _looks_like_wall(body):
+    """True when the body is essentially one undifferentiated block."""
+    text = str(body or "")
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return False
+    if len(lines) <= 2 and len(text) >= 200:
+        return True
+    return any(len(ln) > 500 for ln in lines)
+
+
+def _normalize_wall_body(body):
+    """Insert paragraph breaks after sentence endings for wall shapes.
+
+    Adds whitespace / line breaks ONLY — never rewords (D-19). Non-wall
+    bodies are returned unchanged so structured notes stay byte-identical
+    including their existing line breaks.
+    """
+    text = str(body or "")
+    if not _looks_like_wall(text):
+        return text
+    # Period / ! / ? then spaces then a sentence-start (Latin capital or
+    # common opening quote). Swap the spaces for a blank line — word
+    # sequence (whitespace-collapsed) stays identical.
+    out = re.sub(
+        r'([.!?])[ \t]+([A-Z"“‘«])',
+        r"\1\n\n\2",
+        text,
+    )
+    if out and not out.endswith("\n"):
+        out += "\n"
+    return out
+
+
+def _rules_extract_title(body, *, title=None, filename_stem=None):
+    """Rules-first title: stored title → first `#` heading → filename stem."""
+    if isinstance(title, str) and title.strip():
+        t = title.strip()
+        lower = t.lower()
+        if lower.endswith((".md", ".markdown", ".txt")):
+            t = Path(t).stem
+        if t.strip():
+            return t.strip()
+    for line in str(body or "").splitlines():
+        s = line.strip()
+        if s.startswith("#"):
+            h = s.lstrip("#").strip()
+            if h:
+                return h
+    if isinstance(filename_stem, str) and filename_stem.strip():
+        return filename_stem.strip()
+    for line in str(body or "").splitlines():
+        s = line.strip()
+        if s and not s.startswith("#"):
+            return s[:80]
+    return "note"
+
+
+def _rules_extract_description(body):
+    """First non-heading non-empty line, ≤180 chars (mirrors reflection)."""
+    for line in str(body or "").splitlines():
+        t = line.strip()
+        if not t or t.startswith("#"):
+            continue
+        return t[:180]
+    return ""
+
+
+def _rules_topic(title):
+    topic = re.sub(r"[^a-z0-9]+", "-", str(title or "").lower()).strip("-")
+    return topic or "note"
+
+
+def _v3lite_frontmatter(title, description, topic, day):
+    """Generic v3-lite YAML block — pure string composition, no I/O.
+
+    ONLY: title/description/type: note/topic/status/format/source/tags/
+    date/date_clipped. NO recipe fields, NO taxonomy leaf, NO domain,
+    NO reflects (D-17 minimal cut).
+    """
+    lines = [
+        "---",
+        "title: " + _yaml_quote(title),
+        "description: " + _yaml_quote(description),
+        "type: note",
+        "topic: " + (topic or "note"),
+        "status: processed",
+        "format: prose",
+        "source: personal",
+        "tags: []",
+        "date: " + day,
+        "date_clipped: " + day,
+        "---",
+    ]
+    return "\n".join(lines) + "\n\n"
+
+
+def process_item_markdown(md_text, *, title=None, filename_stem=None, day=None):
+    """Normalize + stamp a single v3-lite frontmatter block onto md text.
+
+    Repairs stale frontmatter in place (never stacks a second block). Wall
+    bodies gain line breaks only. Body word-sequence (whitespace-collapsed)
+    stays byte-identical to the input body. Rules-only — does NOT call
+    run_librarian_call.
+    """
+    if day is None:
+        day = datetime.now().strftime("%Y-%m-%d")
+    _old_fm, body = _split_md_frontmatter(md_text)
+    body = _strip_trailing_related(body)
+    body = _normalize_wall_body(body)
+    derived = _rules_extract_title(
+        body, title=title, filename_stem=filename_stem)
+    desc = _rules_extract_description(body)
+    topic = _rules_topic(derived)
+    fm = _v3lite_frontmatter(derived, desc, topic, day)
+    out = fm + body
+    if not out.endswith("\n"):
+        out += "\n"
+    return out
+
+
+def write_processed_frontmatter(library_root, item_id):
+    """Stamp v3-lite frontmatter onto the room's `items/<id>.md` copy.
+
+    JAIL — resolved path must sit DIRECTLY inside `items/` under the library
+    root; a traversal / absolute / nested escape raises and writes nothing.
+    NEVER touches the user's source folder. NEVER calls run_librarian_call.
+    """
+    if not library_root:
+        raise ValueError("write_processed_frontmatter: library_root required")
+    if not isinstance(item_id, str) or not item_id.strip():
+        raise ValueError("write_processed_frontmatter: item_id required")
+    iid = item_id.strip()
+    if "/" in iid or "\\" in iid or iid in (".", "..") or ".." in iid:
+        raise ValueError(
+            "write_processed_frontmatter: item_id must be a bare server id")
+    lib = Path(str(library_root)).resolve()
+    items_dir = (lib / "items").resolve()
+    target = (items_dir / (iid + ".md")).resolve()
+    if target.parent != items_dir:
+        raise ValueError(
+            "write_processed_frontmatter: resolved path escapes items/ jail")
+    if not target.is_file():
+        raise FileNotFoundError(
+            "write_processed_frontmatter: missing items/" + iid + ".md")
+    if is_icloud_placeholder(target):
+        raise OSError(
+            "write_processed_frontmatter: refusing iCloud placeholder")
+    title = None
+    try:
+        store = load_store(lib)
+        it = (store.get("items") or {}).get(iid)
+        if isinstance(it, dict) and it.get("title"):
+            title = it.get("title")
+    except (OSError, FileNotFoundError, ValueError, TypeError, KeyError):
+        title = None
+    stem = Path(str(title or iid)).stem
+    text = target.read_text(encoding="utf-8")
+    new = process_item_markdown(text, title=title, filename_stem=stem)
+    atomic_write_bytes(str(target), new.encode("utf-8"))
+    return str(target)
 
 
 # ---------------------------------------------------------------------------

@@ -86,6 +86,7 @@ function loadRender(src) {
     extractFn(src, 'renderVisionProgress');
   // eslint-disable-next-line no-new-func
   return new Function('escapeHtml', 'escapeAttr', 'count', 'Date',
+    'appendLongWaitW1', 'ACTIVE_ADAPTER', 'REPULL',
     code + '\nreturn renderVisionProgress;')(
     function (s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -97,7 +98,12 @@ function loadRender(src) {
     // sibling trap: a wall-clock assertion cannot see a wall-clock read
     // because every sample lands inside the same second and agrees. Here the
     // clock is injected so each case names its own elapsed time exactly.
-    { now: function () { return loadRender.NOW; } });
+    { now: function () { return loadRender.NOW; } },
+    // 26.997-03 W-1 appends after the card; this suite measures the shipped
+    // vision fraction/ETA card, so the append is a no-op here.
+    function () {},
+    { source: '' },
+    { longWaitAttempted: 0 });
 }
 
 function paint(src, snap, nowMs) {
@@ -162,13 +168,13 @@ function loadReader(src, screenActive, sink) {
 function claimGroupedThousands(src) {
   const out = [];
   const html = paint(src, snapAt(4182, 13606), nowFor(600000));
-  if (html.indexOf('reading your photographs — 4,182 of 13,606.') === -1) {
+  if (html.indexOf('reading your photographs: 4,182 of 13,606.') === -1) {
     out.push('[vision] app.js: five-figure counts must be grouped with ' +
       'commas (owner ruling 2026-08-14) — got: ' + html);
   }
   // and the small numbers she also sees must NOT grow a separator
   const small = paint(src, snapAt(7, 999), nowFor(600000));
-  if (small.indexOf('reading your photographs — 7 of 999.') === -1) {
+  if (small.indexOf('reading your photographs: 7 of 999.') === -1) {
     out.push('[vision] app.js: a number under a thousand must stay bare — ' +
       'got: ' + small);
   }
@@ -180,7 +186,7 @@ function claimFraction(src) {
   // per ATTEMPTED item: this snapshot's `done` INCLUDES rows that failed to
   // read, and the readout must print that number and not a smaller one.
   const html = paint(src, snapAt(7, 20), nowFor(10000));
-  if (html.indexOf('reading your photographs — 7 of 20.') === -1) {
+  if (html.indexOf('reading your photographs: 7 of 20.') === -1) {
     out.push('[vision] app.js: the reading readout must print the owner-' +
       'approved sentence with the ATTEMPTED count — rows that failed to ' +
       'read consumed wall-clock too, and a bar that counted only successes ' +
@@ -256,8 +262,8 @@ const MUTATIONS = [
   ['the readout prints the SUCCESS count instead of the attempted one',
     function (s) {
       return s.replace(
-        "    return 'reading your photographs — ' + groupThousands(snap.done || 0) +",
-        "    return 'reading your photographs — ' + groupThousands(snap.ok || 0) +");
+        "    return 'reading your photographs: ' + groupThousands(snap.done || 0) +",
+        "    return 'reading your photographs: ' + groupThousands(snap.ok || 0) +");
     },
     claimFraction],
   ['the ETA is replaced by a constant',

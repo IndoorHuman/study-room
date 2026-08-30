@@ -2794,7 +2794,7 @@ const htmlCode = htmlSrc.replace(/<!--[\s\S]*?-->/g, '');
 // intro, ABOVE the controls.
 (function () {
   const HER_CANDLE_FIRST = 'the librarian recommends a sitting at the ' +
-    'candle first — it looks through what\'s new with you before you bless.';
+    'candle first: it looks through what\'s new with you before you bless.';
   const pAt = htmlSrc.indexOf('id="blessing-candle-first"');
   if (pAt === -1) {
     violations.push('[candle-first] ' + HTML + ': no ' +

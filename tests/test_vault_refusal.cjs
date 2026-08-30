@@ -1061,11 +1061,11 @@ runCase('the-two-Apple-sources-keep-their-byte-exact-lines', function () {
   const h = refusalHarness();
   h.setActive({ source: 'apple-notes', btnId: null });
   caseAssert(h.errorCopy('boom') ===
-    "Couldn't reach Notes just now — nothing was lost. Try again in a moment.",
+    "Couldn't reach Notes just now. Nothing was lost. Try again in a moment.",
     'the shipped Notes line changed: ' + JSON.stringify(h.errorCopy('boom')));
   h.setActive({ source: 'apple-photos', btnId: null });
   caseAssert(h.errorCopy('boom') ===
-    "Couldn't reach Photos just now — nothing was lost. Try again in a moment.",
+    "Couldn't reach Photos just now. Nothing was lost. Try again in a moment.",
     'the shipped Photos line changed: ' + JSON.stringify(h.errorCopy('boom')));
   caseAssert(h.errorCopy('please allow permission').indexOf('permission') !== -1,
     'the Photos permission branch was lost');

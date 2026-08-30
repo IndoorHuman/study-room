@@ -8,7 +8,7 @@ the tested study_lib engine. Fully offline; stdlib only (D-01).
 
 Routes:
   GET  /                 index.html (static, directory pinned to the repo root)
-  GET  /api/status       {ok, items, library_root, store_exists}
+  GET  /api/status       {ok, items, library_root, store_exists, survey_url?}
   GET  /api/items        the FULL store object (schema_version + meta + items)
   GET  /lib/<id>         an item's snapshot bytes, resolved by id LOOKUP in
                          the store — never from the URL path (no traversal)
@@ -327,11 +327,14 @@ OWNER_COPY_VERSION_ABSENT = "This copy has no release date yet."
 OWNER_COPY_QUIET_WHATS_NEW = "See what changed in this update."
 # D-10 / gap closure: framing when local stamp lags latest pointer.
 OWNER_COPY_UPDATE_PROMPT = (
-    "A newer version is ready — in Terminal, from your app folder:")
+    "A newer version is ready. In Terminal, from your app folder:")
+OWNER_COPY_UPDATE_SKILL = (
+    "Coding-agent skill (included in this download; install once):")
 OWNER_COPY_UPDATE_AGENT = "Or paste into your coding agent:"
 # Placeholder paths — README and UPDATE-GUIDE explain DOWNLOADED / APP_FOLDER.
 UPDATE_CLI_TEMPLATE = (
     "python3 tools/update_room.py --source DOWNLOADED --dest APP_FOLDER")
+UPDATE_SKILL_INSTALL_TEMPLATE = "python3 tools/install_agent_skills.py"
 UPDATE_AGENT_PROMPT = (
     "Update my Study Room: quit server.py first, then run "
     "python3 tools/update_room.py --source [downloaded folder] "
@@ -561,12 +564,12 @@ CONTENT_TYPES = {
     ".gif": "image/gif",
     ".webp": "image/webp",
 }
-CORRUPT_MSG = ("Your items.json file looks damaged. Nothing was changed — "
+CORRUPT_MSG = ("Your items.json file looks damaged. Nothing was changed; "
                "your judgments are preserved in the file exactly as it is. "
                "Repair or restore it by hand, then start the room again.")
 MIGRATE_FAIL_MSG = (
     "The room couldn't update its records, so it stopped without changing "
-    "anything. Your original file is safe at items.json.v1.bak — restore it "
+    "anything. Your original file is safe at items.json.v1.bak. Restore it "
     "over items.json if anything looks wrong, then start the room again.")
 BACKUP_FAIL_MSG = (
     "The room couldn't make a safety copy of its records, so it stopped "
@@ -591,8 +594,8 @@ WRITE_LOCK = threading.Lock()
 JOB_LOCK = threading.Lock()
 IMPORT_JOB = {"state": "idle", "total": 0, "done": 0,
               "started_ms": 0, "report": None, "message": None}
-IMPORT_BUSY_MSG = "an import is already running — let it finish first."
-IMPORT_ERROR_MSG = ("the import could not finish — your source folder is "
+IMPORT_BUSY_MSG = "an import is already running. let it finish first."
+IMPORT_ERROR_MSG = ("the import could not finish. your source folder is "
                     "untouched, and anything already in your library is "
                     "safe. Check the folder and try again.")
 
@@ -647,10 +650,20 @@ _ADAPTER_EXCLUSION_META = {_apple_notes.SOURCE: "notes_excluded_folders",
                            _obsidian_vault.SOURCE: "vault_excluded_folders"}
 EXPORT_JOB = {"state": "idle", "total": 0, "done": 0,
               "started_ms": 0, "report": None, "message": None}
-EXPORT_BUSY_MSG = "a collect is already running — let it finish first."
-EXPORT_ERROR_MSG = ("the collect could not finish — your Notes are untouched, "
+EXPORT_BUSY_MSG = "a collect is already running. let it finish first."
+EXPORT_ERROR_MSG = ("the collect could not finish. your Notes are untouched, "
                     "and anything already in your library is safe. Try the "
                     "candle again.")
+# 26.997 owner ask 2026-08-28: cooperative stop so she can use the librarian
+# again. Flag cleared at every collect start; set by POST …/collect/stop.
+# ⛔ No new front-facing stopped sentence — the panel clears; the button label
+# is her words ("fully stop the import").
+_COLLECT_STOP = threading.Event()
+
+
+class _CollectStopped(Exception):
+    """Owner asked the room to stop a running collect/import. Not an error."""
+    pass
 
 
 # ---------------------------------------------------------------------------
@@ -1133,6 +1146,10 @@ LAYOUT_OBJECTS = {  # id: (w, h, cls) — pinned to the shipped index.html
     # Client-side it is move-but-not-remove (app.js FUNCTIONAL_IDS); server-
     # side it stays deliberately removable — NOT in FUNCTIONAL_OBJECTS — the
     # notebook's and card box's own graceful-degrade reasoning.
+    "survey-poster": (24, 20, "wall"),  # impact-metrics 05/08: wall invite
+    # to the anonymous survey. Uses decor-art sprite. Client move-but-not-
+    # remove; server deliberately removable like notebook/cardbox. Hidden
+    # in the room when survey_url.txt is absent.
 }
 # The four functional objects ARE the loop — they move, they never leave
 # (D-05). Their ids may never appear in a posted `removed` list.
@@ -1615,14 +1632,14 @@ def validate_decorations(data):
 # Those handlers are its correct remaining use: a code fault in the room is
 # not one of the eleven things a call can come back saying, and dressing it as
 # one would be the mislabelling this whole register exists to prevent.
-LIBRARIAN_ERROR_MSG = "the librarian couldn't reach the model just now — nothing was lost."  # noqa: E501
+LIBRARIAN_ERROR_MSG = "the librarian couldn't reach the model just now. nothing was lost."  # noqa: E501
 # ⚠ TWO SENTENCES USED TO SIT HERE (26.93-07). They answered two questions
 # about an installed program — whether it was set up, and whether it was old
 # enough to need updating — and there is no installed program behind the
 # librarian any more, so both questions stopped existing. Nothing read them
 # after 26.93-08 rebuilt the availability answer on routing; they are gone
 # rather than kept as copy nobody can reach.
-LIBRARIAN_OFF_MSG = "the librarian is off — turn it on in manage when you want it."  # noqa: E501
+LIBRARIAN_OFF_MSG = "the librarian is off. turn it on in manage when you want it."  # noqa: E501
 
 # ---------------------------------------------------------------------------
 # ---- the setup disclosure (#48 surface 1, owner-approved verbatim) --------
@@ -1672,7 +1689,7 @@ SETUP_DISCLOSURE_LINES = (
     "sent too,",
     "and each time, your writing goes with it again.",
     "",
-    "Each can run on a model on your own machine instead — you'll be asked the",
+    "Each can run on a model on your own machine instead; you'll be asked the",
     "first time one comes up.",
     "",
     "One thing needs a key and can't be done on your machine: changing a "
@@ -1686,7 +1703,7 @@ SETUP_DISCLOSURE_LINES = (
     "",
     "Cost: reflections are nearly the whole bill, and are well under a dollar",
     "each. Everything else rounds to nothing. Your real bill is on your",
-    "provider's own usage page — the room never guesses at it.",
+    "provider's own usage page; the room never guesses at it.",
     "",
     "You can stop here and not give a key.                     "
     "more: LIBRARIAN.md",
@@ -1737,17 +1754,17 @@ SETUP_DISCLOSURE_LINES = (
 #
 # `{provider}` is filled in by `failure_sentence` below and by nothing else.
 FAILURE_SENTENCES = {
-    "no_key": "this one needs a librarian that isn't set up on this machine yet — run python3 server.py --setup to add one. nothing was sent.",  # noqa: E501
-    "bad_key": "{provider} turned down the key it was given — run python3 server.py --setup to put a fresh one in. nothing was sent.",  # noqa: E501
-    "rate_limited": "the librarian is busy just now — nothing was lost; ask again shortly.",  # noqa: E501
-    "provider_down": "the librarian isn't answering just now — nothing was lost; ask again shortly.",  # noqa: E501
-    "offline": "this machine couldn't reach the librarian at all — check the network, then ask again. nothing was lost.",  # noqa: E501
-    "ollama_not_running": "nothing is answering on this machine — start it by running: ollama serve. nothing was lost.",  # noqa: E501
-    "model_not_pulled": "this machine is answering, but the model the librarian needs isn't downloaded — get it by running: ollama pull qwen2.5:7b.",  # noqa: E501
-    "truncated": "the answer was cut off before it finished — there wasn't room for all of it, so nothing was saved. ask again.",  # noqa: E501
+    "no_key": "this one needs a librarian that isn't set up on this machine yet. run python3 server.py --setup to add one. nothing was sent.",  # noqa: E501
+    "bad_key": "{provider} turned down the key it was given. run python3 server.py --setup to put a fresh one in. nothing was sent.",  # noqa: E501
+    "rate_limited": "the librarian is busy just now. nothing was lost; ask again shortly.",  # noqa: E501
+    "provider_down": "the librarian isn't answering just now. nothing was lost; ask again shortly.",  # noqa: E501
+    "offline": "this machine couldn't reach the librarian at all. check the network, then ask again. nothing was lost.",  # noqa: E501
+    "ollama_not_running": "nothing is answering on this machine. start it by running: ollama serve. nothing was lost.",  # noqa: E501
+    "model_not_pulled": "this machine is answering, but the model the librarian needs isn't downloaded. get it by running: ollama pull qwen2.5:7b.",  # noqa: E501
+    "truncated": "the answer was cut off before it finished. there wasn't room for all of it, so nothing was saved. ask again.",  # noqa: E501
     "declined": "the librarian declined to answer this one. nothing was saved.",  # noqa: E501
     "malformed": "the answer came back in a shape the room couldn't use, so nothing was saved. ask again.",  # noqa: E501
-    "timeout": "the wait ran out before an answer came back — nothing was lost; ask again.",  # noqa: E501
+    "timeout": "the wait ran out before an answer came back. nothing was lost; ask again.",  # noqa: E501
 }
 
 # ⚠ A SET EQUALITY, ASSERTED AT IMPORT. A twelfth token cannot ship without a
@@ -1856,7 +1873,7 @@ assert set(RECORD_DELETE_FAILED) == (set(_RECORD_DELETE_ERRNOS.values())
 # ⛔ IT NEVER COUNTS WHAT IS LEFT. "12 notes still waiting" is arrears, and old
 # material arrives as an invitation or not at all (law 3). What stopped, what
 # was kept, and that carrying on is available — and nothing else.
-LIBRARIAN_STOPPED_MSG = "stopped partway — everything sorted so far is saved, and starting it again carries on from here."  # noqa: E501
+LIBRARIAN_STOPPED_MSG = "stopped partway. everything sorted so far is saved, and starting it again carries on from here."  # noqa: E501
 
 # The config ask is the ONE job that may not fall to her own machine
 # (librarian_call.JOBS' single `permitted_local: False`), so it is the one job
@@ -1864,7 +1881,7 @@ LIBRARIAN_STOPPED_MSG = "stopped partway — everything sorted so far is saved, 
 # wrong, there is simply no cloud librarian here to ask. That is a different
 # kind of answer from all eleven tokens, so it gets its own line rather than
 # borrowing one — and it names the back door, which always works.
-CONFIG_ABSENT_MSG = "i can't ask about that from here just now — “manage your library” in the room changes any of it directly."  # noqa: E501
+CONFIG_ABSENT_MSG = "i can't ask about that from here just now. “manage your library” in the room changes any of it directly."  # noqa: E501
 
 
 def _answering_fill(job, routing):
@@ -2400,7 +2417,7 @@ JOB_ROOM_WORDS = {
     # all of that stated. ⛔ Not "written by her", and not an agent choosing.
     "archive_learning": (
         "Learning what you love",
-        "The librarian is reading what you have written, to learn what matters to you — it only does this once."),  # noqa: E501
+        "The librarian is reading what you have written, to learn what matters to you. It only does this once."),  # noqa: E501
     # ⛔⛔ HER TWO WORDS FOR THE FINDING PASS (26.9985 § F, 2026-08-25),
     # APPLIED BYTE-FOR-BYTE OUT OF 26.9985-COPY.md § F BY THE SCRIPT THAT
     # WROTE THIS BLOCK — never retyped, never smoothed, never re-punctuated.
@@ -2508,9 +2525,9 @@ SUBJECT_WORDS = {
     "reassure_once": "nothing disappears. i just stop looking at it.",
     "found": "here's what i'd stop reading. tell me if i've gone too far.",
     "removed": (
-        "this is what i took out of what i know about you. nothing is lost — tell me if i should put any of it back."),  # noqa: E501
+        "this is what i took out of what i know about you. nothing is lost. tell me if i should put any of it back."),  # noqa: E501
     "signpost": (
-        "no hurry. the list waits in your library, under 'Set aside — for now'."),  # noqa: E501
+        "no hurry. the list waits in your library, under 'Set aside, for now'."),  # noqa: E501
     # ⛔ § J (2026-08-26, the second F6 sitting — F5's owed words) and
     # § K (R-20), APPLIED BYTE-FOR-BYTE OUT OF 26.9985-COPY.md BY THE
     # SCRIPT THAT WROTE THIS BLOCK — never retyped. Both CHOSEN FROM
@@ -3419,7 +3436,7 @@ def _startup_local_lines(state, search_model):
         # librarian unavailable. Its symptom is a room that offers nothing,
         # which reads as the product being empty rather than as one model being
         # absent, so it has to be said rather than inferred.
-        lines.append("    the search model is not there — the room cannot "
+        lines.append("    the search model is not there; the room cannot "
                      "search your own things until it is.")
         lines.append("    to fetch it, run:   " + _SEARCH_MODEL_COMMAND)
     return lines
@@ -3556,7 +3573,7 @@ def startup_librarian_check(routing, probe=librarian_call.probe_ollama):
     # routing produce byte-identical text.
     if _swiftc_path() is None:
         lines.append("  reading photographs:  the Command Line Tools are "
-                     "not there — the room cannot read your photographs "
+                     "not there; the room cannot read your photographs "
                      "until they are.")
         lines.append("    to fetch them, run:   " + _CLT_INSTALL_COMMAND)
 
@@ -3708,7 +3725,7 @@ def validate_librarian_name(data):
     if "librarian_name" in data:
         v = data["librarian_name"]
         if v is not None and (not isinstance(v, str) or len(v) > 40):
-            return "that name is a little long — a short one, please."
+            return "that name is a little long. a short one, please."
     return None
 
 
@@ -3769,7 +3786,7 @@ def validate_voice_model(data):
         v = data["voice_model"]
         if not isinstance(v, str) or v not in VOICE_MODELS:
             return ("the voice can be " + ", ".join(VOICE_MODELS[:-1]) +
-                    " or " + VOICE_MODELS[-1] + " — nothing else.")
+                    " or " + VOICE_MODELS[-1] + ", nothing else.")
     return None
 
 
@@ -4251,8 +4268,8 @@ def _vision_program_path():
 # `skipped` microseconds later.
 VISION_JOB = {"state": "idle", "total": 0, "done": 0,
               "started_ms": 0, "report": None, "message": None}
-VISION_BUSY_MSG = "the photo reading is already running — let it finish first."  # noqa: E501
-VISION_ERROR_MSG = ("the photo reading could not finish — your photographs "
+VISION_BUSY_MSG = "the photo reading is already running. let it finish first."  # noqa: E501
+VISION_ERROR_MSG = ("the photo reading could not finish. your photographs "
                     "are untouched, and anything already in your library is "
                     "safe. Try again.")
 # ⚠ PROVISIONAL WORDING, AND IT IS NOT THIS PLAN'S TO SETTLE. Front-facing
@@ -4871,7 +4888,7 @@ LIBRARIAN_SHELVES = ("joyful", "receipts", "heavy", "unsure")
 LIBRARIAN_USER_TOOK = ("blessed", "never_show", "skipped")
 # Copy pinned byte-exactly in tests/test_no_push.cjs (26-02) — each message
 # stays on ONE source line so the pins hold; fix the source, never the gate.
-LIBRARIAN_BUSY_MSG = "the librarian is already sorting — let it finish first."  # noqa: E501
+LIBRARIAN_BUSY_MSG = "the librarian is already sorting. let it finish first."  # noqa: E501
 # ⚠ THE CEILING SENTENCE IS THE OWNER'S, APPLIED BYTE-FOR-BYTE FROM
 # 26.99-COPY.md §S-01a/S-01b (#77, D-14). ⛔ No agent wrote, completed,
 # tidied or punctuated it, and no agent may adjust its capitalisation,
@@ -4885,7 +4902,7 @@ LIBRARIAN_BUSY_MSG = "the librarian is already sorting — let it finish first."
 # drift apart, which is what the shipped one-map-no-per-surface-
 # override discipline exists to prevent.
 LIBRARIAN_CEILING_MSG = "The librarian has done enough to understand you. Nothing was lost."  # noqa: E501
-LIBRARIAN_WINDOW_MSG = "your Claude plan's usage window may be full — nothing is lost; run the librarian again and it picks up where it left off."  # noqa: E501
+LIBRARIAN_WINDOW_MSG = "your Claude plan's usage window may be full. nothing is lost; run the librarian again and it picks up where it left off."  # noqa: E501
 
 # The verdict schema, verbatim from AI-SPEC (--json-schema): the CLI
 # validates SHAPE; the server still validates MEMBERSHIP per batch (a
@@ -5102,7 +5119,7 @@ def _presort_worker(batches, sugg_path, auth, consent, started_ms,
             # in flight when she pressed), the run record says it
             # stopped, and the state carries the SHIPPED sentence rather
             # than a new one. `LIBRARIAN_STOPPED_MSG` already reads
-            # "stopped partway — everything sorted so far is saved, and
+            # "stopped partway. everything sorted so far is saved, and
             # starting it again carries on from here", which is exactly
             # what her button promises and is already her register. ⛔ No
             # new front-facing word was written for this (D-14).
@@ -5316,7 +5333,7 @@ _CLEAN_PROPOSALS_LOCK = threading.Lock()
 # cleaning-log.json appends (one per written file) get their OWN small lock
 # for the same reason: never WRITE_LOCK.
 _CLEAN_LOG_LOCK = threading.Lock()
-CLEAN_OFF_MSG = "the tidy-up is off — turn it on in manage when you want a hand with filing."  # noqa: E501
+CLEAN_OFF_MSG = "the tidy-up is off. turn it on in manage when you want a hand with filing."  # noqa: E501
 CLEAN_BATCH_MSG = "batch must be a whole number, or left out for the last one."  # noqa: E501
 CLEAN_RUNS_LIMIT_MSG = "limit must be a whole number between 1 and 50."
 # 26.95-05 (#86 ruling 2): the readability pass speaks in PLACES, never files.
@@ -5769,8 +5786,8 @@ LIBRARIAN_FENCED_TITLE_MIN = 4
 LIBRARIAN_DISMISS_TOPIC_CAP = 200
 # Copy pinned byte-exactly in tests/test_no_push.cjs (26-03) — each message
 # stays on ONE source line so the pins hold; fix the source, never the gate.
-LIBRARIAN_NOTE_BUSY_MSG = "the librarian is already writing — give it a moment."  # noqa: E501
-LIBRARIAN_NOTE_EMPTY_MSG = "nothing blessed to draw from yet — the note comes from what you call safe."  # noqa: E501
+LIBRARIAN_NOTE_BUSY_MSG = "the librarian is already writing. give it a moment."  # noqa: E501
+LIBRARIAN_NOTE_EMPTY_MSG = "nothing blessed to draw from yet. the note comes from what you call safe."  # noqa: E501
 
 # The note call's structured shape: one note, at most one tentative
 # question with a short plain topic. The CLI validates shape; the server
@@ -8864,7 +8881,7 @@ def build_clearing_payload(library_root, subject_entry):
         text = path.read_text(encoding="utf-8")
     except OSError:
         raise ClearingRefused(
-            "there is no notebook to clear — the room has not learned "
+            "there is no notebook to clear; the room has not learned "
             "anything yet, or the file is unreadable")
     header_lines = set()
     for header in (study_lib.LEARNED_HEADER,
@@ -9753,7 +9770,7 @@ CHAT_TURN_CAP = 12
 # model writes the reply per turn. This line survives for exactly one job —
 # a turn whose reply is missing or blank must not paint an empty librarian
 # line — and for nothing else.
-LIBRARIAN_REFINE_ACK = "woven in — the paper holds it now."
+LIBRARIAN_REFINE_ACK = "woven in. the paper holds it now."
 # 26.995-03 task 5 (COPY § C-6, owner 2026-08-18): what the chat says when a
 # rewrite was refused TWICE and the room gave up.
 #
@@ -9772,10 +9789,10 @@ LIBRARIAN_REFINE_ACK = "woven in — the paper holds it now."
 # plainly — but she is also told the thing she cares about, which is that her
 # essay is untouched.
 LIBRARIAN_REFINE_UNCHANGED_MSG = (
-    "that didn't come out right — the reflection is as it was.")
+    "that didn't come out right. the reflection is as it was.")
 # The refusal when no active session with a recorded consent answer waits
 # (D-04's per-turn server-side check reads the flag from session.json).
-LIBRARIAN_NO_SESSION_MSG = "there's no open reflection to add to — tap the candle to begin one."  # noqa: E501
+LIBRARIAN_NO_SESSION_MSG = "there's no open reflection to add to. tap the candle to begin one."  # noqa: E501
 
 
 REFLECTION_NAME_CHARS = 60          # the spine bound, one number for both
@@ -12237,8 +12254,8 @@ librarian_call.bind_job_literals(
 # live in app.js instead, because the refusal is rendered client-side over
 # the shipped /api/meta answer and a server copy of it would be dead text
 # nothing ever emits.
-CONFIG_ERROR_MSG = "couldn't ask just now — try again."  # noqa: E501
-CONFIG_BUSY_MSG = "the librarian is busy just now — let it finish first."  # noqa: E501
+CONFIG_ERROR_MSG = "couldn't ask just now. try again."  # noqa: E501
+CONFIG_BUSY_MSG = "the librarian is busy just now. let it finish first."  # noqa: E501
 CONFIG_ASK_TEXT_MSG = "tell me what should be different, in your own words."  # noqa: E501
 
 # ---- 26.87-05: THE D-21 REFUSAL FAMILY (D-03/D-21) ------------------------
@@ -12309,7 +12326,7 @@ CONFIG_ASK_TEXT_MSG = "tell me what should be different, in your own words."  # 
 CONFIG_MANAGE_ONLY_MSG = "i can't change that one from here."  # noqa: E501
 CONFIG_NOT_A_CAPABILITY_MSG = "that's past what i can change. something like an ai coding assistant in your terminal could build it, if that's a door you like opening."  # noqa: E501
 CONFIG_UNMAPPED_MSG = "i didn't follow that one. say it another way and i'll try again."  # noqa: E501
-CONFIG_TOO_MANY_MSG = "that's more than one decision at once — “manage your library” in the room can change them together."  # noqa: E501
+CONFIG_TOO_MANY_MSG = "that's more than one decision at once. “manage your library” in the room can change them together."  # noqa: E501
 
 # The verdict -> literal map. THE SERVER PICKS THE STRING, so the client can
 # only ever render one the server chose (law 2 / D-21); it never authors a
@@ -13297,7 +13314,7 @@ class StudyHandler(SimpleHTTPRequestHandler):
                     break
                 remaining -= len(chunk)
             self.json_error(
-                413, "That request is too large to accept — the limit is "
+                413, "That request is too large to accept; the limit is "
                      "1 MB.")
             return None, False
         raw = self.rfile.read(length) if length > 0 else b""
@@ -13444,6 +13461,16 @@ class StudyHandler(SimpleHTTPRequestHandler):
         if show_update_prompt:
             show_whats_new = False
         study_lib.remember_release_stamp(stamp)
+        survey_url = ""
+        try:
+            survey_path = Path(self.server.library_root) / "survey_url.txt"
+            if survey_path.is_file():
+                survey_url = survey_path.read_text(encoding="utf-8").strip()
+                # Only allow https Forms-style links — never file: or javascript:
+                if not survey_url.startswith("https://"):
+                    survey_url = ""
+        except OSError:
+            survey_url = ""
         payload = {
             "ok": True,
             "items": len(store["items"]),
@@ -13454,9 +13481,11 @@ class StudyHandler(SimpleHTTPRequestHandler):
             "show_whats_new": bool(show_whats_new),
             "latest_release_date": latest,
             "show_update_prompt": bool(show_update_prompt),
+            "survey_url": survey_url or None,
         }
         if show_update_prompt:
             payload["update_cli"] = UPDATE_CLI_TEMPLATE
+            payload["update_skill_install"] = UPDATE_SKILL_INSTALL_TEMPLATE
             payload["update_agent_prompt"] = UPDATE_AGENT_PROMPT
         return self.json_response(payload)
 
@@ -14843,6 +14872,10 @@ class StudyHandler(SimpleHTTPRequestHandler):
                 return self.handle_import(data)
             if route == "/api/adapter/collect":
                 return self.handle_adapter_collect(data)
+            # 26.997: her stop for a running Photos/Notes/vault collect —
+            # same CSRF inheritance as every POST; not behind a feature switch.
+            if route == "/api/adapter/collect/stop":
+                return self.handle_adapter_collect_stop(data)
             if route == "/api/state":
                 return self.handle_state(data)
             if route == "/api/comment":
@@ -15247,14 +15280,14 @@ class StudyHandler(SimpleHTTPRequestHandler):
             exclude_raw = []
         if not isinstance(exclude_raw, list) or len(exclude_raw) > 200:
             return self.json_error(
-                400, "That folder list couldn't be read — reopen the "
+                400, "That folder list couldn't be read. Reopen the "
                      "picker and try again.")
         exclude_folders = []
         for name in exclude_raw:
             if (not isinstance(name, str) or not name.strip()
                     or len(name) > 200):
                 return self.json_error(
-                    400, "That folder list couldn't be read — reopen the "
+                    400, "That folder list couldn't be read. Reopen the "
                          "picker and try again.")
             exclude_folders.append(name)
         library_root = self.server.library_root
@@ -15321,13 +15354,20 @@ class StudyHandler(SimpleHTTPRequestHandler):
             EXPORT_JOB.update(state="running", total=0, done=0,
                               started_ms=int(time.time() * 1000),
                               report=None, message=None)
+            # A fresh collect owns the stop latch — a press from an older run
+            # must not kill this one.
+            _COLLECT_STOP.clear()
 
         def export_progress(done, total):
+            if _COLLECT_STOP.is_set():
+                raise _CollectStopped()
             with JOB_LOCK:
                 EXPORT_JOB["done"] = done
                 EXPORT_JOB["total"] = total
 
         def import_progress(done, total):
+            if _COLLECT_STOP.is_set():
+                raise _CollectStopped()
             with JOB_LOCK:
                 IMPORT_JOB["done"] = done
                 IMPORT_JOB["total"] = total
@@ -15336,6 +15376,10 @@ class StudyHandler(SimpleHTTPRequestHandler):
             with JOB_LOCK:
                 VISION_JOB["done"] = done
                 VISION_JOB["total"] = total
+
+        def collect_should_stop():
+            if _COLLECT_STOP.is_set():
+                raise _CollectStopped()
 
         # 26.65-07: per-reason skip counts ride out of the Photos collect here,
         # so an honest partial ("some could not be brought in") has a surface.
@@ -15388,7 +15432,8 @@ class StudyHandler(SimpleHTTPRequestHandler):
                 with WRITE_LOCK:
                     report = study_lib.import_folder(
                         staging, library_root, progress_cb=import_progress,
-                        superseded_cb=superseded.extend, **import_kwargs)
+                        superseded_cb=superseded.extend,
+                        should_stop=collect_should_stop, **import_kwargs)
                 _drop_derived_work(library_root, superseded)   # outside, see
                 #                                    the note at /api/import
                 # commit the exported ids to the ledger ONLY after import ok —
@@ -15503,13 +15548,37 @@ class StudyHandler(SimpleHTTPRequestHandler):
                 # held together anywhere else on this path.
                 if getattr(e, "reason", None) == "total_failure":
                     _retract_unproven_source(library_root, adapter.SOURCE)
+            except _CollectStopped:
+                # 26.997: her stop. No new calm sentence — jobs go idle/stopped
+                # so the client can free the librarian without an error scare.
+                # Children are reaped by the stop route AND here as a belt.
+                try:
+                    _apple_photos.terminate_live_children()
+                except Exception:
+                    pass
+                with JOB_LOCK:
+                    EXPORT_JOB["state"] = "stopped"
+                    EXPORT_JOB["message"] = None
+                    if IMPORT_JOB["state"] in ("running", "idle"):
+                        IMPORT_JOB["state"] = "stopped"
+                        IMPORT_JOB["message"] = None
             except study_lib.StoreCorruptError:
                 with JOB_LOCK:
                     EXPORT_JOB["state"] = "error"
                     EXPORT_JOB["message"] = CORRUPT_MSG
                     IMPORT_JOB["state"] = "error"
                     IMPORT_JOB["message"] = CORRUPT_MSG
-            except Exception:
+            except Exception as e:
+                # Server-side class+errno only — never a stack on the wire
+                # (26.997 P3 dig: mid-import failure was undiagnosable).
+                try:
+                    err = getattr(e, "errno", None)
+                    sys.stderr.write(
+                        "collect worker failed: %s%s\n" % (
+                            type(e).__name__,
+                            (" errno=%s" % err) if err is not None else ""))
+                except Exception:
+                    pass
                 with JOB_LOCK:
                     EXPORT_JOB["state"] = "error"
                     EXPORT_JOB["message"] = EXPORT_ERROR_MSG
@@ -15522,6 +15591,32 @@ class StudyHandler(SimpleHTTPRequestHandler):
 
         threading.Thread(target=worker, daemon=True).start()
         return self.json_response({"ok": True, "running": True})
+
+    def handle_adapter_collect_stop(self, data):
+        """26.997 — her stop for a running collect/import (ask 2026-08-28).
+
+        Same shape as handle_librarian_presort_stop: set the flag so the
+        worker ends at its next progress boundary, flip job state HERE so
+        the next poll is not still "running", and reap Photos children so
+        the machine is actually freed. ⛔ No new front-facing sentence.
+        Nothing running is not an error."""
+        with JOB_LOCK:
+            exp_run = EXPORT_JOB["state"] == "running"
+            imp_run = IMPORT_JOB["state"] == "running"
+            if not exp_run and not imp_run:
+                return self.json_response({"ok": True, "stopping": False})
+            _COLLECT_STOP.set()
+            if exp_run:
+                EXPORT_JOB["state"] = "stopped"
+                EXPORT_JOB["message"] = None
+            if imp_run:
+                IMPORT_JOB["state"] = "stopped"
+                IMPORT_JOB["message"] = None
+        try:
+            _apple_photos.terminate_live_children()
+        except Exception:
+            pass
+        return self.json_response({"ok": True, "stopping": True})
 
     def handle_state(self, data):
         """Validated batch of state changes AND the connection consent gate
@@ -15570,7 +15665,7 @@ class StudyHandler(SimpleHTTPRequestHandler):
                     store = self.load_store()
                 except FileNotFoundError:
                     return self.json_error(
-                        400, "Nothing in the library yet — import "
+                        400, "Nothing in the library yet. Import "
                              "something first.")
                 for change in changes:
                     if not isinstance(change, dict):
@@ -15662,7 +15757,7 @@ class StudyHandler(SimpleHTTPRequestHandler):
                 store = self.load_store()
             except FileNotFoundError:
                 return self.json_error(
-                    400, "Nothing in the library yet — import something "
+                    400, "Nothing in the library yet. Import something "
                          "first.")
             item = store["items"].get(item_id)
             if item is None:
@@ -18398,7 +18493,7 @@ class StudyHandler(SimpleHTTPRequestHandler):
                     study_lib.save_her_sentences(root, kept)
         except Exception:      # noqa: BLE001
             return self.json_error(
-                500, "that could not be taken back — try again.")
+                500, "that could not be taken back. try again.")
         return self.json_response({"ok": True})
 
     def handle_librarian_reach_date(self, data):
@@ -18734,13 +18829,13 @@ _KEY_CHECK_WORDS = {
     None: "the key works.",
     "bad_key": "that provider rejected the key.",
     "no_key": "there was nothing to check with.",
-    "rate_limited": "that provider is busy just now — which says nothing "
+    "rate_limited": "that provider is busy just now, which says nothing "
                     "about the key.",
-    "provider_down": "that provider could not be reached just now — which "
+    "provider_down": "that provider could not be reached just now, which "
                      "says nothing about the key.",
-    "offline": "no network reached that provider — which says nothing about "
+    "offline": "no network reached that provider, which says nothing about "
                "the key.",
-    "timeout": "that provider did not answer in time — which says nothing "
+    "timeout": "that provider did not answer in time, which says nothing "
                "about the key.",
     "malformed": "that provider refused the request itself, which is about "
                  "the room and not about the key.",
@@ -18748,9 +18843,9 @@ _KEY_CHECK_WORDS = {
     "declined": "that provider declined to answer, which says nothing about "
                 "the key.",
     "ollama_not_running": "that answer belongs to your own machine, not to a "
-                          "company — nothing to do with this key.",
+                          "company, nothing to do with this key.",
     "model_not_pulled": "that answer belongs to your own machine, not to a "
-                        "company — nothing to do with this key.",
+                        "company, nothing to do with this key.",
 }
 
 
@@ -18843,7 +18938,7 @@ def run_setup():
     IT IS THE ONLY KEY SURFACE, and it is idempotent: re-running it is how a key
     is changed or removed, and running it twice in a row leaves the same files.
     """
-    print("The Study Room — setup")
+    print("The Study Room: setup")
     print("")
     # ⚠ #48 SURFACE 1, VERBATIM AND OWNER-APPROVED (#77 site 1, ruled
     # 2026-08-14). What stood here before was honest and well written and did
@@ -18943,7 +19038,7 @@ def run_setup():
 
     for provider in librarian_call.KEY_ENV_NAMES:
         saved = librarian_call.load_keys().get(provider, {}).get("present")
-        print("%s — %s" % (provider,
+        print("%s: %s" % (provider,
                            "a key is saved" if saved else "no key saved"))
         print("  press Enter    leave it exactly as it is")
         print("  y              type a key now (it will not be shown)")
@@ -18959,7 +19054,7 @@ def run_setup():
 
         if answer == "remove":
             librarian_call.remove_key(provider)
-            print("  removed — no key is saved for %s." % provider)
+            print("  removed. no key is saved for %s." % provider)
         elif answer == "env":
             librarian_call.remove_key(provider)
             print("  nothing saved. Set %s in your own shell when you want "
@@ -18968,13 +19063,13 @@ def run_setup():
             try:
                 # ⚠ HIDDEN INPUT, AND NEVER AN ARGUMENT. Nothing echoes what is
                 # typed here, and nothing repeats a fragment of it back.
-                typed = getpass.getpass("  key (hidden — not shown as you "
+                typed = getpass.getpass("  key (hidden, not shown as you "
                                         "type): ")
             except (EOFError, KeyboardInterrupt):
                 print("")
                 typed = ""
             if not typed.strip():
-                print("  nothing typed — left exactly as it was.")
+                print("  nothing typed. left exactly as it was.")
             else:
                 librarian_call.save_key(provider, typed)
                 del typed
@@ -18997,7 +19092,7 @@ def run_setup():
                     # ⚠ THE DISCLOSURE COMES BEFORE THE CALL, not after it.
                     print("  Checking it now: this makes ONE small request to "
                           "%s." % provider)
-                    print("  Nothing of yours is sent — the request is a few "
+                    print("  Nothing of yours is sent; the request is a few "
                           "words asking for one")
                     print("  word back. Press Ctrl+C to skip the check.")
                     try:
@@ -19035,7 +19130,7 @@ def run_setup():
             where = "no key"
         print("  %-12s %s" % (provider, where))
     print("")
-    print("Run this again any time — it is how a key is changed or removed.")
+    print("Run this again any time. It is how a key is changed or removed.")
     print("To open the room:  python3 server.py")
 
 
@@ -19093,7 +19188,7 @@ def run_vision_pass_cli(argv):
         root = Path(override).expanduser()
     else:
         root = resolve_library_root(study_lib.library_pointer_path())
-    print("The Study Room — reading photographs")
+    print("The Study Room: reading photographs")
     print("  library: %s" % root)
     try:
         store = study_lib.load_store(root)
@@ -19107,7 +19202,7 @@ def run_vision_pass_cli(argv):
     for key in ("eligible", "fenced", "jailed", "bad_name", "missing_file"):
         print("  %-14s %d" % (key, derived[key]))
     if "--dry-run" in argv:
-        print("  (dry run — nothing was read)")
+        print("  (dry run, nothing was read)")
         return 0
     if not photo_reading_available():
         print("  " + VISION_MISSING_MSG)
@@ -19162,7 +19257,7 @@ _NOTE_PASS_USAGE = (
     "  picture itself becomes the note, keeping its date and everything\n"
     "  you have decided about it, and the original moves in beside it.\n"
     "\n"
-    "  Close the room first — this refuses to run while it is open.\n"
+    "  Close the room first. This refuses to run while it is open.\n"
     "\n"
     "  --library PATH   work on this library instead of the configured one.\n"
     "  --dry-run        say what would happen; change nothing.\n")
@@ -19178,12 +19273,12 @@ def run_note_pass_cli(argv):
         root = Path(override).expanduser()
     else:
         root = resolve_library_root(study_lib.library_pointer_path())
-    print("The Study Room — the screenshots become notes")
+    print("The Study Room: the screenshots become notes")
     print("  library: %s" % root)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.settimeout(0.25)
         if probe.connect_ex(("127.0.0.1", PORT)) == 0:
-            print("  the room is open — close it first, then run this again.")
+            print("  the room is open. close it first, then run this again.")
             return 1
     try:
         store = study_lib.load_store(root)
@@ -19236,7 +19331,7 @@ def run_note_pass_cli(argv):
         _candidates, derived = study_lib.note_pass_candidates(store, root)
         for key in sorted(derived):
             print("  %-18s %s" % (key, derived[key]))
-        print("  (dry run — nothing was changed)")
+        print("  (dry run, nothing was changed)")
         return 0
 
     def save():
@@ -19314,10 +19409,10 @@ _REPAIR_NOTES_USAGE = (
     "\n"
     "  Put back the words an earlier version of the cleaner deleted from\n"
     "  your notes. It only ever touches a note that is exactly as that\n"
-    "  cleaner left it — anything you have edited since is left alone and\n"
+    "  cleaner left it; anything you have edited since is left alone and\n"
     "  reported.\n"
     "\n"
-    "  Close the room first — this refuses to run while it is open.\n"
+    "  Close the room first. This refuses to run while it is open.\n"
     "\n"
     "  --library PATH   work on this library instead of the configured one.\n"
     "  --apply          actually rewrite. WITHOUT IT NOTHING IS WRITTEN.\n")
@@ -19334,12 +19429,12 @@ def run_repair_notes_cli(argv):
     else:
         root = resolve_library_root(study_lib.library_pointer_path())
     apply = "--apply" in argv
-    print("The Study Room — putting back the words that were deleted")
+    print("The Study Room: putting back the words that were deleted")
     print("  library: %s" % root)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.settimeout(0.25)
         if probe.connect_ex(("127.0.0.1", PORT)) == 0:
-            print("  the room is open — close it first, then run this again.")
+            print("  the room is open. close it first, then run this again.")
             return 1
     try:
         store = study_lib.load_store(root)
@@ -19362,7 +19457,7 @@ def run_repair_notes_cli(argv):
         print("  %d note(s) are not exactly as the old cleaner left them, so "
               "they were left alone." % result["report"]["refused_edited"])
     if not apply:
-        print("  (nothing was written — add --apply to rewrite)")
+        print("  (nothing was written; add --apply to rewrite)")
     return 0 if result["ok"] else 1
 
 
@@ -19481,7 +19576,7 @@ def main():
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nThe room is closed — everything is saved.")
+        print("\nThe room is closed. Everything is saved.")
 
 
 if __name__ == "__main__":

@@ -2934,7 +2934,7 @@ function runForNowForeverLabelGate() {
   const declAt = appSrc.indexOf('var MANAGE_PANES');
   ok(declAt !== -1, '09/panes-exist', 'MANAGE_PANES must exist');
   const seg = appSrc.slice(declAt, declAt + 6000);
-  const forNow = 'Set aside — for now';
+  const forNow = 'Set aside, for now';
   const forever = 'You put these away for good';
   ok(seg.indexOf("label: '" + forNow + "'") !== -1,
     '09/for-now-label',

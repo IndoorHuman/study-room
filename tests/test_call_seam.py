@@ -3089,7 +3089,7 @@ def run_drill():
          ' nothing was saved.",  # noqa: E501\n',
          ""),
         ("a busy-server sentence made to mention a key",
-         "the librarian is busy just now — nothing was lost;"
+         "the librarian is busy just now. nothing was lost;"
          " ask again shortly.",
          "the librarian is busy just now — check your key,"
          " then ask again shortly."),

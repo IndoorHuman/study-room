@@ -76,10 +76,10 @@ function must(src, name, present, label) {
 
 const FRAMING =
   'Some notes carry private things right in the title. Until you bless a ' +
-  "note, the room keeps its title out of the librarian's reach — " +
-  'nothing here is read by the librarian before you say so.';
+  "note, the room keeps its title out of the librarian's reach. " +
+  'Nothing here is read by the librarian before you say so.';
 const PICKER_LINE =
-  'Keep any Notes folder out of the room — pick the ones to skip.';
+  'Keep any Notes folder out of the room: pick the ones to skip.';
 
 must(appSrc, 'app.js', FRAMING, 'framing-copy');
 must(appSrc, 'app.js', PICKER_LINE, 'framing-copy');

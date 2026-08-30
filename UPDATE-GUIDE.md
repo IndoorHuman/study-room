@@ -1,4 +1,4 @@
-# updating the study room — replace the folder, keep your library
+# updating the study room: replace the folder, keep your library
 
 the app **never** checks online for updates and has **no** built-in updater.
 when a newer release exists, you download it yourself and replace the app
@@ -15,7 +15,7 @@ folder. your library folder and everything in `~/.study-room/` stay put.
 
 only replace the **app folder**. never delete or move your library folder.
 
-## the default path (terminal — any computer, no AI required)
+## the default path (terminal; any computer, no AI required)
 
 1. **download** the latest release from GitHub and unzip it.
 2. **quit** the study room (`Ctrl+C` in the terminal running `python3 server.py`).
@@ -49,26 +49,26 @@ you can refresh the local “latest release” pointer without replacing yet:
 python3 tools/update_room.py --sync-latest-only --source ~/Downloads/study-room
 ```
 
-restart `python3 server.py` — the room may show a behind-latest prompt under
+restart `python3 server.py`; the room may show a behind-latest prompt under
 the toolbar (local file compare only; no network).
 
-## the power path (any coding agent — optional)
+## the power path (any coding agent, optional)
 
-if you use Claude Code, Cursor, Codex, Windsurf, or any other coding agent,
-paste this (fill in your paths):
+Every download includes `skills/visualroom-update/` and a one-command installer:
+
+```bash
+python3 tools/install_agent_skills.py
+```
+
+That copies the skill into Cursor, Claude Code, and Codex skill folders (see
+`skills/README.md`). Then ask your agent to **update the Study Room**; it
+should run `tools/update_room.py` only (never reimplement the copy, never
+push git, never fetch from the network).
+
+If you prefer not to install the skill, paste this (fill in your paths):
 
 > Update my Study Room: quit server.py first, then run
 > `python3 tools/update_room.py --source [downloaded folder] --dest [live app folder]`.
-
-the agent should run `tools/update_room.py` only — never reimplement the
-copy steps, never push git, never fetch from the network.
-
-### optional agent skill (Cursor, Claude Code, etc.)
-
-a portable skill lives in `skills/visualroom-update/SKILL.md` in this repo.
-copy or symlink it into your agent’s skills folder — see `skills/README.md`
-for install paths. slash-command names differ by tool; the skill file works
-the same everywhere because it only documents the CLI above.
 
 ## going back
 

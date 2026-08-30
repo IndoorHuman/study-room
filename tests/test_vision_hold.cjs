@@ -4,7 +4,7 @@
  * alone (three owner rulings, 2026-08-14). Zero-dep node (assert/fs/path).
  *
  * WHAT THIS SUITE IS FOR. The owner was shown three placements for the
- * sentence she approved — "reading your photographs — N of M." — and ruled:
+ * sentence she approved — "reading your photographs: N of M." — and ruled:
  * KEEP ME ON THE IMPORT SCREEN. Shown the result, she ruled again: the candle
  * re-pull should be held too. The ending waits; the reading readout is what
  * she watches for the ~21 minutes it takes; the ending lands when the reading
@@ -25,7 +25,7 @@
  *      ending goes up over a reading that has not started.
  *   4. NOISE WHERE SILENCE WAS PROMISED. `pending`, and `running` before the
  *      pass has computed its remainder, carry no fraction. Painting them puts
- *      "reading your photographs — 0 of 0." in the room's panel every time a
+ *      "reading your photographs: 0 of 0." in the room's panel every time a
  *      candle re-pull finds nothing new AND has nothing to read — text where
  *      the shipped rule is that a run which added nothing paints none at all.
  *      So the hold is SILENT until there is a number, and a zero total is a
@@ -365,6 +365,7 @@ function runFailedCollect(src, opts) {
     'consumeRepullSeam', 'runNextRepull', 'renderVaultFolderPicker',
     'VAULT_REFUSAL_TITLE', 'VAULT_REFUSAL_WHY', 'VAULT_REFUSAL_NEXT',
     'VAULT_REFUSAL_RETRY', 'VAULT_REFUSAL_PRIVATE', 'VAULT_PICKER_UNREACHABLE',
+    'warnBeforeLongRun',
     code + '\nreturn runAdapterCollect;')(
     // No DOM: every control the renderers reach for is absent, so nothing is
     // wired and nothing is clicked. This suite is about the release, not the
@@ -390,7 +391,11 @@ function runFailedCollect(src, opts) {
     // on purpose: their bytes are pinned in test_no_push.cjs and
     // test_vault_refusal.cjs, and this suite asserts nothing about them.
     'VAULT_REFUSAL_TITLE', 'VAULT_REFUSAL_WHY', 'VAULT_REFUSAL_NEXT',
-    'VAULT_REFUSAL_RETRY', 'VAULT_REFUSAL_PRIVATE', 'VAULT_PICKER_UNREACHABLE');
+    'VAULT_REFUSAL_RETRY', 'VAULT_REFUSAL_PRIVATE', 'VAULT_PICKER_UNREACHABLE',
+    // HEAD #171: the shipped collect asks first; this suite is about the
+    // release after the call, so the warning continues at once. Bytes of
+    // that sentence live in test_long_run_warning.cjs, not here.
+    function (_box, onContinue) { onContinue(); });
   collect('apple-photos', undefined, box, opts.room);
   return Promise.resolve().then(flush).then(flush).then(function () {
     return { sink: sink, REPULL: REPULL, box: box };
@@ -621,6 +626,7 @@ function runTwoSourceRepull(src, opts) {
     'paintVisionTrouble', 'renderVaultFolderPicker', 'VAULT_REFUSAL_TITLE',
     'VAULT_REFUSAL_WHY', 'VAULT_REFUSAL_NEXT', 'VAULT_REFUSAL_RETRY',
     'VAULT_REFUSAL_PRIVATE', 'VAULT_PICKER_UNREACHABLE', 'setTimeout',
+    'warnBeforeLongRun',
     code + '\nreturn startCandleRepull;')(
     function () { return null; },
     { items: 0 },
@@ -666,7 +672,8 @@ function runTwoSourceRepull(src, opts) {
     'VAULT_REFUSAL_RETRY', 'VAULT_REFUSAL_PRIVATE', 'VAULT_PICKER_UNREACHABLE',
     // A fake deferral: nothing runs on a clock here, and the drain below
     // decides when the one-shot re-reads happen.
-    function (fn) { sink.timers.push(fn); });
+    function (fn) { sink.timers.push(fn); },
+    function (_box, onContinue) { onContinue(); });
 
   start();
   return drainTimers(sink).then(function () {
@@ -756,7 +763,7 @@ function claimHoldsOnPending(src) {
 // Law 3, and the reason the candle can be held at all. A reading with nothing
 // to read passes through `pending` and through `running` with a total of 0 on
 // its way to `done`. If either painted, a candle re-pull that found nothing
-// new would put "reading your photographs — 0 of 0." in the room's panel —
+// new would put "reading your photographs: 0 of 0." in the room's panel —
 // text where the shipped rule is that a run which added nothing paints none.
 function claimNothingToReadPaintsNothing(src) {
   const sink = freshSink();
@@ -805,7 +812,7 @@ function claimReleasesOnEveryEnding(src) {
     ['done', [{ state: 'done' }], 1],
     ['skipped', [{ state: 'skipped' }], 1],
     ['error', [{ state: 'error', message: 'the photo reading could not ' +
-      'finish — your photographs are untouched.' }], 1],
+      'finish. your photographs are untouched.' }], 1],
     ['a job that vanished (idle)', [{ state: 'idle' }], 1],
     ['three failed reads', [null], 1]
   ];
@@ -828,7 +835,7 @@ function claimReleasesOnEveryEnding(src) {
 }
 
 function claimErrorSaysTheServersOwnWords(src) {
-  const MSG = 'the photo reading could not finish — your photographs are ' +
+  const MSG = 'the photo reading could not finish. your photographs are ' +
     'untouched, and anything already in your library is safe. Try again.';
   const sink = freshSink();
   return runVision(src, [{ state: 'error', message: MSG }],
@@ -1169,12 +1176,19 @@ function paintRoomLine(src, snap, nowMs) {
     extractFn(src, 'visionEtaLine') + '\n' +
     extractFn(src, 'renderVisionLine');
   // eslint-disable-next-line no-new-func
+  // appendLongWaitW1 / ACTIVE_ADAPTER / REPULL: W-1 (26.997-03) appends after
+  // the card; this harness is about the count+bar shape, so the append is a
+  // no-op here. Byte pin for W-1 lives in test_session_flow.cjs.
   const render = new Function('escapeHtml', 'escapeAttr', 'count', 'Date',
+    'appendLongWaitW1', 'ACTIVE_ADAPTER', 'REPULL',
     code + '\nreturn renderVisionLine;')(
     function (x) { return String(x); },
     function (x) { return String(x); },
     function (n, one, many) { return n + ' ' + (n === 1 ? one : many); },
-    { now: function () { return nowMs; } });
+    { now: function () { return nowMs; } },
+    function () {},
+    { source: '' },
+    { longWaitAttempted: 0 });
   const box = { innerHTML: '' };
   render(box, snap);
   return box.innerHTML;
@@ -1189,7 +1203,7 @@ function claimTheRoomShowsHerBar(src) {
   const html = paintRoomLine(src,
     { state: 'running', done: 7, total: 20, started_ms: STARTED_AT },
     STARTED_AT + 10000);
-  const want = 'reading your photographs \u2014 7 of 20.';
+  const want = 'reading your photographs: 7 of 20.';
   if (html.indexOf(want) === -1) {
     out.push('[bar] the room must still carry her approved sentence with the ' +
       'live count — got ' + html);
@@ -2722,6 +2736,55 @@ const KNOWN_NEGATIVES = [
     }]
 ];
 
+// 26.997-03 Task 1: same REPULL.busy fact the candle busy note uses must
+// omit the walk begin door. Driven here so the hold suite, which already
+// owns that flag, fails if the painter ignores it. Outside the 77-count
+// mutation drill — this is a new behaviour pin, not a rewrite of CR-01.
+function claimWalkBeginOmittedWhileCollectHolds(src) {
+  const out = [];
+  const sig = 'function sessionPaintWalkOpen(';
+  const start = src.indexOf(sig);
+  if (start === -1) {
+    out.push('[26.997-03] sessionPaintWalkOpen missing');
+    return out;
+  }
+  let i = src.indexOf('{', start);
+  let depth = 0;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') { depth++; }
+    else if (src[i] === '}') { depth--; if (depth === 0) { i++; break; } }
+  }
+  const paintSrc = src.slice(start, i);
+  function run(busy) {
+    const spot = {
+      innerHTML: '',
+      querySelector: function (sel) {
+        const cls = String(sel).replace(/^\./, '');
+        if (this.innerHTML.indexOf(cls) === -1) { return null; }
+        return { addEventListener: function () {}, disabled: false, style: {} };
+      },
+      appendChild: function () {}
+    };
+    const fn = new Function('spot', 'OFFER_COPY', 'escapeHtml', 'REPULL',
+      'sessionWalkBegin', 'sessionWalkSkip',
+      paintSrc + '\nreturn sessionPaintWalkOpen;');
+    fn(spot, { walkBookend: 'BOOKEND', walkQuiet: 'not today' },
+      function (s) { return String(s); }, { busy: !!busy },
+      function () {}, function () {})(spot);
+    return spot.innerHTML;
+  }
+  const idle = run(false);
+  const held = run(true);
+  if (idle.indexOf('session-walk-begin') === -1) {
+    out.push('[26.997-03] idle walk open lost the begin door');
+  }
+  if (held.indexOf('session-walk-begin') !== -1 ||
+      held.indexOf('look through them') !== -1) {
+    out.push('[26.997-03] walk begin still drawn while REPULL.busy');
+  }
+  return out;
+}
+
 (function main() {
   const failures = [];
   let controlsGreen = 0;
@@ -2735,6 +2798,14 @@ const KNOWN_NEGATIVES = [
   let survived = 0;
 
   Promise.resolve()
+    .then(function () {
+      const said = claimWalkBeginOmittedWhileCollectHolds(appSrc);
+      if (said.length) {
+        failures.push('CONTROL RED: walk begin omitted while collect holds :: ' +
+          said.join(' ;; '));
+        assert.strictEqual(said.length, 0, said.join(' ;; '));
+      }
+    })
     .then(function () {
       // ---- the unmutated controls, all in the same pass as the drill ----
       return CONTROLS.reduce(function (chain, c) {

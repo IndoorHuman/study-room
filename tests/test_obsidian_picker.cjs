@@ -550,7 +550,7 @@ async function main() {
         'still render');
       // ⚠⚠ THIS ASSERTION WAS CHANGED 2026-08-19, AND NOT TO GO GREEN.
       // It used to require the empty state to BORROW the fence screen's
-      // sentence ('nothing flagged yet — add a folder to keep private') --
+      // sentence ('nothing flagged yet. add a folder to keep private') --
       // so it pinned the defect as correct, which is this project's
       // recurring trap. On the fence screen that line is true. HERE it fires
       // when the vault returned no top-level folders at all: it invited her

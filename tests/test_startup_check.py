@@ -82,7 +82,7 @@ EXPECTED_CONTROLS = 2
 # fixed prefix is copied byte-for-byte from the search model's line eight
 # lines above it in the same file.
 CLT_FACT_LINE = ("  reading photographs:  the Command Line Tools are not "
-                 "there — the room cannot read your photographs until they "
+                 "there; the room cannot read your photographs until they "
                  "are.")
 CLT_COMMAND_LINE = "    to fetch them, run:   xcode-select --install"
 
@@ -805,7 +805,7 @@ def run_drill():
         print("  DRILL CONTROL RED: the real measurement")
     # Control 2 — an independently fabricated clean copy. Two controls that
     # were the same call twice would only prove the call is deterministic.
-    clean_whys = {"bad_key": "anthropic turned down the key it was given — "
+    clean_whys = {"bad_key": "anthropic turned down the key it was given. "
                              "run python3 server.py --setup to put a fresh "
                              "one in.",
                   "local_working": "None",

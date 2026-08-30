@@ -753,7 +753,7 @@ function loadResolve(items) {
       '(7) both render bodies must be substantial (' + prog.length +
       ' / ' + runState.length + ' chars) — a negative scan over a sliver ' +
       'measures nothing');
-    assert.ok(prog.indexOf('sorting — batch ') !== -1,
+    assert.ok(prog.indexOf('sorting: batch ') !== -1,
       '(7) the lifted live readout is the real one (it still says the ' +
       'batch fraction, which the ruling left untouched)');
     assert.ok(runState.indexOf('last sort: titles and dates only.') !== -1,
@@ -1448,7 +1448,7 @@ function loadResolve(items) {
 
   runCase('heavy-group-shot-filled-prompt', function () {
     const f1 =
-      'a few of these look like the same gathering — set those aside too?';
+      'a few of these look like the same gathering. set those aside too?';
     assert.ok(appSrc.indexOf("groupShotPrompt: '" + f1 + "'") !== -1,
       '(9) 26.996-11: group-shot prompt is her F1, byte-identical');
     const q = region('renderGroupShotQuestion');
@@ -1486,7 +1486,7 @@ function loadResolve(items) {
     assert.notStrictEqual(declAt, -1,
       '(9) 26.996-09: MANAGE_PANES must exist to pin the two list names');
     const seg = appSrc.slice(declAt, declAt + 6000);
-    const forNow = "label: 'Set aside — for now'";
+    const forNow = "label: 'Set aside, for now'";
     const forever = "label: 'You put these away for good'";
     assert.ok(seg.indexOf(forNow) !== -1,
       '(9) 26.996-09 (#121): the for-now pane reads her ruling verbatim');
@@ -1522,8 +1522,8 @@ function loadResolve(items) {
       '(9) local sentence passes through escapeHtml');
     assert.strictEqual(hits(render, /<button/g), 2,
       '(9) exactly two actions, asserted as an integer');
-    assert.ok(render.indexOf("not this — don't ask again") !== -1 &&
-      render.indexOf("yes — I'll set that up") !== -1,
+    assert.ok(render.indexOf("not this: don't ask again") !== -1 &&
+      render.indexOf("yes: I'll set that up") !== -1,
       '(9) both action lines stay one source literal each');
   });
 

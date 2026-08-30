@@ -11,7 +11,7 @@
  *   F-2  the sentence is written into a ONE-LINE paragraph carrying
  *        white-space:nowrap + overflow:hidden + text-overflow:ellipsis, so
  *        it is cut with a "…" at ordinary widths. She saw
- *        "Kept private from now on — and anything already here from that fol…"
+ *        "Kept private from now on, and anything already here from that fol…"
  *
  *   F-4  the REMOVE sentence renders into the slot at the acted-on row's
  *        position, which sits inside the list's own 10rem scroll box. With a
@@ -63,10 +63,10 @@ const appServer = require(path.join(ROOT, 'tests/lib/app-server.cjs'));
 // Her two approved sentences, pinned here byte-exactly. ⛔ These are the
 // POSITIVE CONTROLS: geometry is only believed once the right string is on
 // screen, so no arm can pass over an empty or truncated slot.
-const C3_ADD = 'Kept private from now on — and anything already here from ' +
+const C3_ADD = 'Kept private from now on, and anything already here from ' +
   'that folder is set aside too.';
 const C4_REMOVE = 'The librarian can read that folder again. Things already ' +
-  'set aside stay set aside — you can bring any of them back yourself, one ' +
+  'set aside stay set aside; you can bring any of them back yourself, one ' +
   'at a time.';
 const FRAMING_OPENS = 'These folders stay private.';
 // ⭐ HER FUTURE-ONLY SENTENCE, ruled at the sitting on 2026-08-20 and applied
@@ -76,7 +76,7 @@ const FRAMING_OPENS = 'These folders stay private.';
 // import. ⛔ THIS FILE MEASURES GEOMETRY, NOT PROVENANCE: that the constant
 // still matches HER RECORD is tests/test_roster_ruled_copy.cjs's job, pinned
 // against 26.96-DECISIONS.md rather than against this literal.
-const A1_FUTURE_ONLY = 'Kept private from now on — anything already here ' +
+const A1_FUTURE_ONLY = 'Kept private from now on. Anything already here ' +
   'from that folder stays where it is.';
 
 // Long enough that the list must scroll inside its own box — which is the

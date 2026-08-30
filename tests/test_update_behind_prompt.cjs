@@ -25,7 +25,7 @@ const UPDATE_AGENT_PROMPT =
   'python3 tools/update_room.py --source [downloaded folder] ' +
   '--dest [live app folder].';
 const OWNER_COPY_UPDATE_PROMPT =
-  'A newer version is ready — in Terminal, from your app folder:';
+  'A newer version is ready. In Terminal, from your app folder:';
 
 let failures = 0;
 function fail(msg) {
@@ -59,8 +59,9 @@ ok(serverSrc.indexOf('UPDATE_AGENT_PROMPT') !== -1,
   'server.py pins UPDATE_AGENT_PROMPT constant');
 
 ok(serverSrc.indexOf('update_cli') !== -1 &&
+    serverSrc.indexOf('update_skill_install') !== -1 &&
     serverSrc.indexOf('update_agent_prompt') !== -1,
-  'handle_status includes update_cli + update_agent_prompt when behind');
+  'handle_status includes update_cli + update_skill_install + update_agent_prompt when behind');
 
 ok(serverSrc.indexOf('update_command') === -1,
   'server.py no longer exposes Cursor-only update_command field');
@@ -75,8 +76,16 @@ ok(/if\s+show_update_prompt[\s\S]{0,120}show_whats_new\s*=\s*False/.test(serverS
 ok(app.indexOf('show_update_prompt') !== -1,
   'client reads show_update_prompt from status');
 
-ok(app.indexOf('update_cli') !== -1 && app.indexOf('update_agent_prompt') !== -1,
-  'client reads update_cli + update_agent_prompt from status');
+ok(app.indexOf('update_cli') !== -1 &&
+    app.indexOf('update_skill_install') !== -1 &&
+    app.indexOf('update_agent_prompt') !== -1,
+  'client reads update_cli + update_skill_install + update_agent_prompt from status');
+
+ok(app.indexOf('OWNER_COPY_UPDATE_SKILL') !== -1,
+  'client mounts bundled skill install lead line');
+
+ok(app.indexOf('install_agent_skills.py') !== -1,
+  'client shows install_agent_skills one-liner');
 
 ok(app.indexOf('OWNER_COPY_UPDATE_AGENT') !== -1,
   'client mounts agent paste lead line');
@@ -97,6 +106,9 @@ ok(fs.existsSync(path.join(ROOT, 'UPDATE-GUIDE.md')),
 
 ok(fs.existsSync(path.join(ROOT, 'skills/visualroom-update/SKILL.md')),
   'portable visualroom-update skill ships in repo');
+
+ok(fs.existsSync(path.join(ROOT, 'tools/install_agent_skills.py')),
+  'install_agent_skills.py ships with bundled skills');
 
 // Forbidden-token gate on new status field names (not owner copy).
 const forbiddenNames = ['check for updates', 'checkForUpdates', 'auto-update',

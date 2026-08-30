@@ -221,7 +221,7 @@ function staticSurfacePins() {
     '(s1) the write-back toggle label is pinned');
   assert.notStrictEqual(app.indexOf(
     "when this is on, a reflection you keep is also written into your " +
-    "vault as one NEW note in Claude's observation/Journal analysis — " +
+    "vault as one NEW note in Claude's observation/Journal analysis. " +
     "nothing already there is ever touched."), -1,
     '(s1) the write-back disclosure is pinned byte-for-byte');
   assert.notStrictEqual(app.indexOf(

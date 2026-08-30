@@ -544,6 +544,9 @@
     // D-03 / UPD-03: publish stamp from /api/status.release_date (null when
     // absent). Manage renders stamp-or-omit; never a hand-edited semver.
     releaseDate: null,
+    // impact-metrics 05/08: https survey Form URL from library survey_url.txt
+    // (null when absent). Wall poster stays hidden until this is set.
+    surveyUrl: null,
     scan: null       // the last successful scan {path, text, image, skipped}
   };
 
@@ -553,10 +556,14 @@
   var OWNER_COPY_QUIET_WHATS_NEW = 'See what changed in this update.';
   // D-10 / gap closure: behind-latest prompt — provider-neutral CLI + agent paste.
   var OWNER_COPY_UPDATE_PROMPT =
-    'A newer version is ready — in Terminal, from your app folder:';
+    'A newer version is ready. In Terminal, from your app folder:';
+  var OWNER_COPY_UPDATE_SKILL =
+    'Coding-agent skill (included in this download; install once):';
   var OWNER_COPY_UPDATE_AGENT = 'Or paste into your coding agent:';
   var UPDATE_CLI_FALLBACK =
     'python3 tools/update_room.py --source DOWNLOADED --dest APP_FOLDER';
+  var UPDATE_SKILL_INSTALL_FALLBACK =
+    'python3 tools/install_agent_skills.py';
   var UPDATE_AGENT_FALLBACK =
     'Update my Study Room: quit server.py first, then run ' +
     'python3 tools/update_room.py --source [downloaded folder] ' +
@@ -627,6 +634,8 @@
       el.style.cssText = 'color:var(--ink);font-size:15px;font-weight:500;' +
         'margin:8px 0 14px;width:100%;text-align:center';
       var cli = (data && data.update_cli) || UPDATE_CLI_FALLBACK;
+      var skillInstall = (data && data.update_skill_install) ||
+        UPDATE_SKILL_INSTALL_FALLBACK;
       var agentPrompt = (data && data.update_agent_prompt) ||
         UPDATE_AGENT_FALLBACK;
       el.innerHTML = '';
@@ -636,6 +645,12 @@
         el.appendChild(lead);
       }
       appendCopyBlock(el, cli);
+      var skillLead = document.createElement('span');
+      skillLead.style.cssText = 'display:block;margin-top:10px;color:var(--ink-soft);' +
+        'font-size:14px;font-weight:400';
+      skillLead.textContent = OWNER_COPY_UPDATE_SKILL;
+      el.appendChild(skillLead);
+      appendCopyBlock(el, skillInstall);
       var agentLead = document.createElement('span');
       agentLead.style.cssText = 'display:block;margin-top:10px;color:var(--ink-soft);' +
         'font-size:14px;font-weight:400';
@@ -773,12 +788,12 @@
     if (!skipped) { return lines; }
     if (skipped.heic) {
       lines.push(count(skipped.heic, 'photo is', 'photos are') +
-        ' in HEIC format, which browsers cannot show — convert them to ' +
+        ' in HEIC format, which browsers cannot show; convert them to ' +
         'JPEG and they can join a later import.');
     }
     if (skipped.icloud) {
       lines.push(count(skipped.icloud, 'file is', 'files are') +
-        ' still up in iCloud — download them to this computer first and ' +
+        ' still up in iCloud; download them to this computer first and ' +
         'they can come in too.');
     }
     if (skipped.oversize) {
@@ -787,7 +802,7 @@
     }
     if (skipped.symlink) {
       lines.push(count(skipped.symlink, 'shortcut was', 'shortcuts were') +
-        ' left alone — the room only takes real files.');
+        ' left alone; the room only takes real files.');
     }
     var exts = Object.keys(skipped.unknown || {}).sort();
     if (exts.length) {
@@ -795,7 +810,7 @@
         return sum + skipped.unknown[ext];
       }, 0);
       lines.push(count(total, 'file of another kind', 'files of other kinds') +
-        ' (' + exts.join(', ') + ') stayed where they are — the room keeps ' +
+        ' (' + exts.join(', ') + ') stayed where they are; the room keeps ' +
         'notes and photos.');
     }
     return lines;
@@ -835,7 +850,7 @@
         escapeHtml('your library lives at ' + res.data.library_root + '.') +
         '</p>';
     }).catch(function () {
-      quietError(note, 'The room could not be reached — is the server ' +
+      quietError(note, 'The room could not be reached. Is the server ' +
         'still running in your terminal?');
     });
   }
@@ -877,7 +892,7 @@
           return '<p>' + escapeHtml(line) + '</p>';
         }).join('') +
         (importable === 0 ? '<p>' + escapeHtml('nothing here the room ' +
-          'can hold yet — it keeps notes (.md, .txt) and photos (.png, ' +
+          'can hold yet; it keeps notes (.md, .txt) and photos (.png, ' +
           '.jpg, .gif, .webp).') + '</p>' : '');
       $('btn-import').disabled = importable === 0;
       // 26.6-05 (E4 empty): during first-run an empty folder gets the Screen 4
@@ -887,7 +902,7 @@
       if (ONB.active && importable === 0) {
         box.innerHTML =
           '<h2>' + escapeHtml('That folder looks empty') + '</h2>' +
-          '<p>' + escapeHtml('Nothing to bring in from there — point me ' +
+          '<p>' + escapeHtml('Nothing to bring in from there. Point me ' +
             'at another folder, or bring in your whole vault with your ' +
             'private folders kept unread.') + '</p>' +
           '<p><button id="btn-onb-empty-vault" type="button" ' +
@@ -903,7 +918,7 @@
     }).catch(function () {
       APP.scan = null;
       $('btn-import').disabled = true;
-      quietError(box, 'The room could not be reached — is the server ' +
+      quietError(box, 'The room could not be reached. Is the server ' +
         'still running in your terminal?');
     });
   }
@@ -924,7 +939,7 @@
     // in the folder). Her sentence, then continue starts the copy.
     warnBeforeLongRun(box, function () {
       box.innerHTML = '<p>' +
-        escapeHtml('copying your things in —') + '</p>';
+        escapeHtml('copying your things in:') + '</p>';
       apiPost('/api/import', {
         path: APP.scan.path,
         consolidation: q1Answer()
@@ -945,7 +960,7 @@
       }).catch(function () {
         $('btn-import').disabled = false;
         quietError(box, 'The room could not be reached, so nothing was ' +
-          'brought in — is the server still running in your terminal?');
+          'brought in. is the server still running in your terminal?');
       });
     });
   }
@@ -967,7 +982,7 @@
     var total = snap.total || 0;
     var elapsed = Date.now() - (snap.started_ms || Date.now());
     // ✅ HER WORDING, 2026-08-23, chosen from three offered — the fix for
-    // "collecting your photos — 0 of 0", which she read at the landing and
+    // "collecting your photos: 0 of 0", which she read at the landing and
     // called confusing. The line UNDER the fraction explains the fraction.
     //
     // ⛔⛔ THE UNKNOWN-TOTAL BRANCH ONLY, AND THAT IS NOT A DETAIL. This
@@ -978,7 +993,7 @@
     // have shipped a new untrue sentence to fix a merely confusing one. She
     // was not asked about that branch because it is not a wording question:
     // the shipped `still counting…` there is unchanged and unruled.
-    if (!total) { return 'still counting — the room doesn\'t know how many yet.'; }
+    if (!total) { return 'still counting; the room doesn\'t know how many yet.'; }
     if (done < 5 || elapsed < 3000) { return 'still counting…'; }
     var leftMs = (elapsed / done) * Math.max(0, total - done);
     var minutes = Math.round(leftMs / 60000);
@@ -986,12 +1001,104 @@
     return 'about ' + count(minutes, 'minute', 'minutes');
   }
 
-  function renderImportProgress(box, snap) {
-    box.innerHTML = '<p>' + escapeHtml('copying your things in — ' +
+  // ⛔ HER W-1, sitting 2026-08-28 (26.997-03). One obligation across export +
+  // import + vision (A2). Placeholders N / M / [time] only — no polish.
+  // Stop control: her words on COLLECT_STOP_COPY (wired with the real stop
+  // path — Don't show undrawable controls).
+  // D1: additional to the shipped collecting N-of-M + ETA lines above.
+  function longWaitW1Minutes(snap) {
+    // Same honesty gates as importEtaLine — do not invent a minute early.
+    var done = snap.done || 0;
+    var total = snap.total || 0;
+    var elapsed = Date.now() - (snap.started_ms || Date.now());
+    if (!total || done < 5 || elapsed < 3000) { return null; }
+    var leftMs = (elapsed / done) * Math.max(0, total - done);
+    return Math.round(leftMs / 60000);
+  }
+
+  function longWaitW1Line(attempted, landed, minutes) {
+    if (!(attempted > 0) || minutes == null || minutes < 0) { return null; }
+    return 'So far the librarain attempted to import ' + attempted +
+      ' of photos but only ' + landed +
+      ' of photos are actually in the room. The librarian is trying to ' +
+      'finish the entire import and it will take estimated ' + minutes +
+      ' mins, your RAM in your computer are being used, and the librarian ' +
+      'is not available for any task until this is over.';
+  }
+
+  function appendLongWaitW1(box, snap, attempted, landed) {
+    if (!box || ACTIVE_ADAPTER.source !== 'apple-photos') { return; }
+    var mins = longWaitW1Minutes(snap);
+    var line = longWaitW1Line(attempted, landed, mins);
+    if (!line) { return; }
+    box.innerHTML += '<p class="session-long-wait-w1">' +
+      escapeHtml(line) + '</p>';
+  }
+
+  // ⭐⭐ HER STOP LABEL — 26.997 ask 2026-08-28, verbatim.
+  // ⛔ Not recapitalised, not shortened. Shown only while a real collect
+  // stop path is live (export/import progress), never during vision alone.
+  var COLLECT_STOP_COPY = 'fully stop the import';
+
+  // Progress body + stop sibling: numbers repaint; the button must not be
+  // destroyed under her finger (same discipline as librarian-stop).
+  function collectProgressBody(box) {
+    var body = box.querySelector('.collect-progress-body');
+    if (!body) {
+      box.innerHTML = '<div class="collect-progress-body"></div>';
+      body = box.querySelector('.collect-progress-body');
+      seatCollectStop(box);
+    }
+    return body;
+  }
+
+  function seatCollectStop(box) {
+    if (!box || box.querySelector('.collect-stop')) { return; }
+    var wrap = document.createElement('p');
+    wrap.style.marginTop = '10px';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn collect-stop';
+    btn.textContent = COLLECT_STOP_COPY;
+    btn.addEventListener('click', function () {
+      stopCollectImport(box);
+    });
+    wrap.appendChild(btn);
+    box.appendChild(wrap);
+  }
+
+  function stopCollectImport(box) {
+    return apiPost('/api/adapter/collect/stop', {}).then(function () {
+      readAdapterProgress(box, 0);
+    }).catch(function () {
+      readAdapterProgress(box, 0);
+    });
+  }
+
+  // Her stop: free the librarian. No agent-drafted stopped sentence —
+  // the panel clears; the error scare is not this path.
+  function freeCollectAfterStop(box) {
+    reenableNotes();
+    if (ACTIVE_ADAPTER.room) {
+      REPULL.busy = false;
+      REPULL.queue = [];
+      REPULL.pendingSource = false;
+      REPULL.holding = null;
+      REPULL.candleAsked = false;
+      consumeRepullSeam();
+    }
+    if (box) { box.innerHTML = ''; }
+  }
+
+  function renderImportProgress(box, snap, withCollectStop) {
+    var host = withCollectStop ? collectProgressBody(box) : box;
+    host.innerHTML = '<p>' + escapeHtml('copying your things in: ' +
       (snap.done || 0) + ' of ' + (snap.total || 0) + '.') + '</p>' +
       '<p>' + escapeHtml(importEtaLine(snap)) + '</p>' +
       '<p>' + escapeHtml('you can close this; the room will be ready.') +
       '</p>';
+    appendLongWaitW1(host, snap, REPULL.longWaitAttempted || 0,
+      snap.done || 0);
   }
 
   // 26.94-03 (D-03, SRM-11): THE FOURTH IMPORT STAGE'S LINE — the sentence
@@ -1033,7 +1140,7 @@
   }
 
   function visionStageLine(snap) {
-    return 'reading your photographs — ' + groupThousands(snap.done || 0) +
+    return 'reading your photographs: ' + groupThousands(snap.done || 0) +
       ' of ' + groupThousands(snap.total || 0) + '.';
   }
 
@@ -1050,7 +1157,7 @@
   // folder path — `#screen-setup`, `#btn-import`, the default
   // `#import-report` host — and the WHOLE-VAULT path renders the same first
   // frame and then never polls at all, because there was nothing here it
-  // could call. Its screen painted "copying your things in — 0 of N" and
+  // could call. Its screen painted "copying your things in: 0 of N" and
   // stayed there for ever while the import completed underneath.
   //
   // ⚠ A SECOND READER WAS THE OBVIOUS FIX AND IS THE WRONG ONE. This file
@@ -1235,6 +1342,8 @@
       'var(--clay);width:' + escapeAttr(pct.toFixed(1)) + '%"></div>' +
       '</div><p style="font:13px var(--font-pixel);color:var(--ink-soft);' +
       'margin:6px 0 0">' + escapeHtml(visionEtaLine(snap, pct)) + '</p></div>';
+    appendLongWaitW1(box, snap, REPULL.longWaitAttempted || 0,
+      snap.total || 0);
   }
 
   // "30.7% · about 12 minutes left" — and "left" is appended ONLY when there
@@ -1367,7 +1476,7 @@
         // replaces it with the real remainder — across a load_store of a
         // sixteen-thousand-item library, which is not instant). A reading with
         // NOTHING to read passes through exactly those two and goes straight
-        // to `done`. Painting them would put "reading your photographs — 0 of
+        // to `done`. Painting them would put "reading your photographs: 0 of
         // 0." at the candle every time a re-pull found nothing new and had
         // nothing to read — text where law 3 says a run that added nothing
         // paints none at all. So these reads hold the ending and reset the
@@ -1429,7 +1538,7 @@
     // own.
     if (misses >= 3) {
       importReadReenable(ctx);
-      quietError(box, 'The room could not be heard from just now — open ' +
+      quietError(box, 'The room could not be heard from just now. Open ' +
         'the room again in a little while and it will show what came in.');
       return;
     }
@@ -1460,11 +1569,11 @@
   function importIdentityClause(report) {
     var out = '';
     if (report.refreshed) {
-      out += ' — ' + count(report.refreshed, 'was', 'were') + ' ' +
+      out += '; ' + count(report.refreshed, 'was', 'were') + ' ' +
         IMPORT_REFRESHED_COPY;
     }
     if (report.joined) {
-      out += ' — ' + count(report.joined, 'thing was', 'things were') + ' ' +
+      out += '; ' + count(report.joined, 'thing was', 'things were') + ' ' +
         IMPORT_JOINED_COPY;
     }
     return out;
@@ -1487,7 +1596,7 @@
       report.imported === 0;
     var brought = 'brought in ' + count(report.imported, 'thing', 'things');
     if (report.deduped) {
-      brought += ' — ' + count(report.deduped, 'was', 'were') +
+      brought += '; ' + count(report.deduped, 'was', 'were') +
         ' already here, so the room kept the copies it had';
     }
     // #58 rulings 2 and 3, said out loud. The COUNTS are the build's; the
@@ -1538,6 +1647,26 @@
     // (it buries a file write inside an unrelated flow).
   }
 
+  function applySurveyPosterFromStatus(data) {
+    // impact-metrics 05/08: show the wall poster only when the library
+    // carries an https survey_url.txt (via /api/status.survey_url).
+    var url = (data && data.survey_url) || null;
+    if (url && typeof url === 'string' && url.indexOf('https://') === 0) {
+      APP.surveyUrl = url;
+    } else {
+      APP.surveyUrl = null;
+    }
+    var btn = $('room-obj-survey-poster');
+    if (!btn) { return; }
+    if (APP.surveyUrl) {
+      btn.hidden = false;
+      btn.removeAttribute('hidden');
+    } else {
+      btn.hidden = true;
+      btn.setAttribute('hidden', '');
+    }
+  }
+
   function renderManageSummary() {
     var box = $('manage-summary');
     if (!box) { return; }
@@ -1550,6 +1679,7 @@
       APP.libraryRoot = res.data.library_root;
       APP.releaseDate = (res.data && res.data.release_date) || null;
       applyWhatsNewFromStatus(res.data);
+      applySurveyPosterFromStatus(res.data);
       box.innerHTML = '<p>' +
         escapeHtml(count(res.data.items, 'thing', 'things') +
         ' in your library, kept at ' + res.data.library_root + '.') +
@@ -1568,7 +1698,7 @@
         });
       }
     }).catch(function () {
-      quietError(box, 'The room could not be reached — is the server ' +
+      quietError(box, 'The room could not be reached. Is the server ' +
         'still running in your terminal?');
     });
   }
@@ -1968,7 +2098,7 @@
     // blessing screen); the retry lookup is container-scoped so the
     // duplicate-inner-id hazard of two hosts can never mis-bind.
     var note = blessingNoteEl();
-    note.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    note.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button id="btn-bless-retry" class="btn" type="button">try ' +
       'saving again</button></p>';
@@ -2342,7 +2472,7 @@
     bar.innerHTML = '<p id="blessing-ribbon-progress">' +
       escapeHtml((BLESS.index + 1) + ' of ' + BLESS.ids.length) + '</p>' +
       '<p><button id="btn-ribbon-bless-safe" class="btn" type="button">' +
-      'joyful — bring it back</button> ' +
+      'joyful: bring it back</button> ' +
       '<button id="btn-ribbon-bless-never" class="btn btn-never" ' +
       'type="button">put it away for good</button> ' +
       '<button id="btn-ribbon-bless-notnow" class="btn" type="button">' +
@@ -2569,7 +2699,7 @@
     if (subtitle) { subtitle.style.display = 'none'; }
     $('shelf-cards').innerHTML = '';
     $('shelf-empty').innerHTML =
-      '<p>your shelf is ready when you are — bless things anytime from ' +
+      '<p>your shelf is ready when you are. bless things anytime from ' +
       'the pile</p>' +
       '<p><button id="shelf-to-pile" type="button" style="background:none;' +
       'border:none;color:var(--ink-soft);cursor:pointer;font:inherit;' +
@@ -2599,11 +2729,11 @@
                    last_opened_ms: next.last_opened_ms });
     apiPost('/api/state', { changes: changes }).then(function (res) {
       if (!res.ok) {
-        showReaderNote('That could not be saved — the room may not be ' +
+        showReaderNote('That could not be saved; the room may not be ' +
           'reachable.');
       }
     }).catch(function () {
-      showReaderNote('That could not be saved — the room may not be ' +
+      showReaderNote('That could not be saved; the room may not be ' +
         'reachable.');
     });
     if (SHELF.cycle.shown_ids.indexOf(item.id) === -1) {
@@ -3856,7 +3986,7 @@
       : $('reader-comment-note');
     if (!note) { return; }
     note.innerHTML = '<p class="quiet-error">That note could not be ' +
-      'saved — the room may not be reachable.</p>' +
+      'saved; the room may not be reachable.</p>' +
       '<p><button type="button" class="btn comment-retry">try saving ' +
       'again</button></p>';
     var retry = note.querySelector('.comment-retry');
@@ -4060,7 +4190,7 @@
   function showReactionRetry(id, reaction) {
     var target = reactionNoteTarget(id);
     if (!target) { return; }
-    target.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    target.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn react-retry">try saving ' +
       'again</button></p>';
@@ -4385,7 +4515,7 @@
     var slot = $('shelf-cover');
     var note = slot ? slot.querySelector('.cover-note') : null;
     if (!note) { return; }
-    note.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    note.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn cover-retry">try saving ' +
       'again</button></p>';
@@ -4480,7 +4610,7 @@
     if ((item.tags || []).indexOf('screenshots') !== -1) {
       chips.push({ facet: 'tag', value: 'screenshots',
         label: 'no more screenshots',
-        ack: 'done — screenshots will not come back.' });
+        ack: 'done. screenshots will not come back.' });
     }
     if (typeof item.year === 'number') {
       // TYPE PIN (plan 23-01 contract): the year value is the item's own
@@ -4489,12 +4619,12 @@
       // compare; a string year would silently match nothing.
       chips.push({ facet: 'year', value: item.year,
         label: 'nothing from ' + item.year,
-        ack: 'done — nothing from ' + item.year + ' will come back.' });
+        ack: 'done. nothing from ' + item.year + ' will come back.' });
     }
     if (item.folder) {
       chips.push({ facet: 'folder', value: item.folder,
         label: 'nothing more from ' + item.folder,
-        ack: 'done — nothing more from ' + item.folder +
+        ack: 'done. nothing more from ' + item.folder +
           ' will come back.' });
     }
     if (item.type === 'image' || item.type === 'text') {
@@ -4502,13 +4632,13 @@
         label: item.type === 'image' ? 'no more pictures'
           : 'no more notes',
         ack: item.type === 'image'
-          ? 'done — pictures will not come back.'
-          : 'done — notes will not come back.' });
+          ? 'done. pictures will not come back.'
+          : 'done. notes will not come back.' });
     }
     if (item.source) {
       chips.push({ facet: 'source', value: item.source,
         label: 'nothing more from ' + item.source,
-        ack: 'done — nothing more from ' + item.source +
+        ack: 'done. nothing more from ' + item.source +
           ' will come back.' });
     }
     var active = SHELF.filters || [];
@@ -4573,7 +4703,7 @@
   }
 
   function showFilterRetry(filters, chip, slot) {
-    slot.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    slot.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn filter-retry">try saving ' +
       'again</button></p>';
@@ -4672,9 +4802,9 @@
   // expanded-empty line.
   var MANAGE_SECTIONS = [
     { key: 'pile', el: 'manage-sec-pile', head: 'Pile (',
-      empty: 'the pile is empty — nothing waiting to be judged.' },
+      empty: 'the pile is empty. nothing waiting to be judged.' },
     { key: 'blessed', el: 'manage-sec-blessed', head: 'Blessed (',
-      empty: 'nothing blessed yet — the pile is where things start.' },
+      empty: 'nothing blessed yet. the pile is where things start.' },
     { key: 'hidden', el: 'manage-sec-hidden', head: 'Hidden (',
       empty: 'nothing hidden right now.' },
     { key: 'never', el: 'manage-sec-never', head: 'You put these away for good (',
@@ -4682,7 +4812,7 @@
     { key: 'retired', el: 'manage-sec-retired', head: 'Retired (',
       empty: 'nothing retired.' },
     { key: 'filters', el: 'manage-sec-filters', head: 'Active filters (',
-      empty: 'none — the room shows everything you allowed.' }
+      empty: 'none. the room shows everything you allowed.' }
   ];
 
   function manageSectionDef(key) {
@@ -4964,11 +5094,11 @@
     // 26.9985 (R-15, hers): the set-aside pane — SUBJECTS the librarian
     // may not read, beside the FOLDERS it may not read. 26.996-09 (#121):
     // the for-now list and the forever list must read as two different
-    // things in Manage — this pane is ⭐ `Set aside — for now`, and the
+    // things in Manage — this pane is ⭐ `Set aside, for now`, and the
     // § H signpost in SUBJECT_WORDS names it the same way. ⚠ Presence
     // UNCONDITIONAL, the roster's own reasoning: someone with no proposals
     // yet still owns the door to name a subject herself (R-11, both doors).
-    { key: 'subjects', label: 'Set aside — for now',
+    { key: 'subjects', label: 'Set aside, for now',
       els: ['manage-sec-subjects'] },
     // 26.995-13 (C-3): the librarian's memory of HER — directly under the
     // librarian, because it is the librarian's memory. ⚠ ITS PRESENCE IS
@@ -5289,7 +5419,7 @@
       }).join('') + '</p>' +
       '<p style="color:var(--ink-soft);font-size:13px;margin:10px 0 0">' +
       escapeHtml('the candle is the librarian. its flame carries what ' +
-        'she is doing — never the time of day.') + '</p>';
+        'she is doing, never the time of day.') + '</p>';
     // Re-derive the thinking classes onto the freshly built art AND the
     // freshly built chips (the one derivation site owns both; this only
     // asks it to run).
@@ -5591,8 +5721,8 @@
           rows.map(function (item) {
             if (plain) {
               var line = (item.type === 'image' ? 'photo' : 'note') +
-                ' — saved ' + pileDate(item) +
-                (item.state === 'resting' ? ' — resting for a while' : '');
+                ', saved ' + pileDate(item) +
+                (item.state === 'resting' ? ', resting for a while' : '');
               return '<div class="card manage-row">' +
                 '<p class="card-title" style="margin:0 0 4px">' +
                 '<button type="button" class="manage-open" data-id="' +
@@ -5780,7 +5910,7 @@
   // pile stays put, with a quiet line and a retry for the same change.
   function showReviseRetry(id, toState) {
     var note = $('pile-note');
-    note.innerHTML = '<p class="quiet-error">That change did not save — ' +
+    note.innerHTML = '<p class="quiet-error">That change did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn pile-retry">try saving ' +
       'again</button></p>';
@@ -5841,7 +5971,7 @@
   // home stays put, with a quiet line and a retry for the same change.
   function showTriggerRetry(id, on, via) {
     var note = $('pile-note');
-    note.innerHTML = '<p class="quiet-error">That change did not save — ' +
+    note.innerHTML = '<p class="quiet-error">That change did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn trigger-retry">try saving ' +
       'again</button></p>';
@@ -5980,7 +6110,7 @@
 
   function showFilterRemoveRetry(filters) {
     var note = $('pile-note');
-    note.innerHTML = '<p class="quiet-error">That change did not save — ' +
+    note.innerHTML = '<p class="quiet-error">That change did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn filter-remove-retry">try ' +
       'saving again</button></p>';
@@ -6066,7 +6196,7 @@
     var note = box ? box.querySelector('.consolidation-note') : null;
     if (!note) { return; }
     note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-      'margin:8px 0 0">' + "couldn't save — try again." + '</p>';
+      'margin:8px 0 0">' + "couldn't save. try again." + '</p>';
   }
 
   // One tap writes the target bool through the existing whitelist. On
@@ -6285,12 +6415,12 @@
       escapeHtml('write my notes back to my vault files') +
       '</p>' +
       '<p style="color:var(--never);font-size:14px;margin:0 0 8px">' +
-      escapeHtml('a note you leave here is added under `## Comments` in the original file, timestamped. Nothing else is touched — every line above it stays exactly as you wrote it.') +
+      escapeHtml('a note you leave here is added under `## Comments` in the original file, timestamped. Nothing else is touched: every line above it stays exactly as you wrote it.') +
       '</p>' +
       '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
       escapeHtml(on
-        ? 'this is on — an eligible note you leave is added to its vault file.'
-        : 'this is off — your notes stay in the room and touch no vault file.') +
+        ? 'this is on: an eligible note you leave is added to its vault file.'
+        : 'this is off: your notes stay in the room and touch no vault file.') +
       '</p>' +
       '<p style="margin:0"><button type="button" ' +
       'class="comments-sync-toggle" style="' +
@@ -6317,7 +6447,7 @@
       var note = box ? box.querySelector('.comments-sync-note') : null;
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + "couldn't save — try again." + '</p>';
+        'margin:8px 0 0">' + "couldn't save. try again." + '</p>';
     }
     apiPost('/api/meta', { sync_comments_enabled: target === true })
       .then(function (res) {
@@ -6359,10 +6489,10 @@
   // into the strings: they were copied byte-for-byte out of the primary
   // record (26.96-UAT/beats.json, OD-1), never retyped from a plan.
   var HER_MEMORY_LINE_1 =
-    'Your own sentences — shown in full, with a remove this line control ' +
+    'Your own sentences, shown in full, with a remove this line control ' +
     'next to each.';
   var HER_MEMORY_LINE_2 =
-    'Reflections that landed — just the reflection\'s name, and whether ' +
+    'Reflections that landed, just the reflection\'s name, and whether ' +
     'you kept it or passed on it.';
   // ⛔ HER EMPTY-STATE SENTENCE. Do not append. Do not re-wrap. The newline
   // is hers too (OD-3, "Its own line").
@@ -6532,7 +6662,7 @@
         // invented — and ⛔ never to an ordinal, because "2 of 7" is a count
         // read aloud and a count is forbidden here in every modality.
         var who = row.about || String(row.text || '').slice(0, 40);
-        btn.setAttribute('aria-label', HER_MEMORY_STRIKE + ' — ' + who);
+        btn.setAttribute('aria-label', HER_MEMORY_STRIKE + ': ' + who);
         meta.appendChild(btn);
         wrap.appendChild(meta);
 
@@ -6625,7 +6755,7 @@
                 failLine = document.createElement('p');
                 failLine.className = 'quiet-error';
                 failLine.textContent = 'That choice ' +
-                  'did not save — the room may not be reachable.';
+                  'did not save; the room may not be reachable.';
                 confirmSlot.appendChild(failLine);
               }
               if (!again) {
@@ -6828,9 +6958,9 @@
   // that commit never touched LIBRARIAN.md. Repeating the unqualified promise
   // at the switch would have spread a second false sentence while fixing the
   // first. The manual's own line is the repair, and it is owed to #77.
-  var CLEAN_DISCLOSURE_COPY = 'your wording is never changed — this only adds line breaks, at your own full stops, so a note written as one solid block can be read. nothing is sent anywhere.';
-  var CLEAN_ON_COPY = 'this is on — you can tidy from here, or right after you bring a folder in.';
-  var CLEAN_OFF_COPY = 'this is off — nothing in your vault changes.';
+  var CLEAN_DISCLOSURE_COPY = 'your wording is never changed: this only adds line breaks, at your own full stops, so a note written as one solid block can be read. nothing is sent anywhere.';
+  var CLEAN_ON_COPY = 'this is on: you can tidy from here, or right after you bring a folder in.';
+  var CLEAN_OFF_COPY = 'this is off: nothing in your vault changes.';
   // 26.95-05: RETIRED HERE — the second switch (#86 ruling 5), the
   // post-import offer (#91), the per-note tick screen and its
   // consent-to-send card (#86 ruling 2 / #89). Their copy is deleted rather
@@ -6843,9 +6973,9 @@
   // the labelling backend, which #87 retired and this commit does NOT yet
   // delete — see the owed note at the head of the tidy-up section.
   var CLEAN_UNDO_COPY = 'undo this';
-  var CLEAN_UNDO_NONE_COPY = 'nothing to put back — this batch is already the way it was.';
-  var CLEAN_TROUBLE_COPY = 'the tidy-up could not finish that just now — your files are untouched.';
-  var CLEAN_UNREACHABLE_COPY = 'the room could not be reached — is the server still running in your terminal?';
+  var CLEAN_UNDO_NONE_COPY = 'nothing to put back. this batch is already the way it was.';
+  var CLEAN_TROUBLE_COPY = 'the tidy-up could not finish that just now. your files are untouched.';
+  var CLEAN_UNREACHABLE_COPY = 'the room could not be reached. is the server still running in your terminal?';
 
   function cleaningOn() {
     return !!(CLEAN.status && CLEAN.status.available === true);
@@ -6973,7 +7103,7 @@
       var note = box ? box.querySelector('.cleaning-toggle-note') : null;
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + escapeHtml("couldn't save — try again.") +
+        'margin:8px 0 0">' + escapeHtml("couldn't save. try again.") +
         '</p>';
     }
     apiPost('/api/meta', { cleaning_enabled: target === true })
@@ -7041,7 +7171,7 @@
   // ⚠ "not one word changes" is still literally true and is not weakened by
   // the addition: the repair moves her own DATE VALUES between two labels
   // above the body and takes no word out of her writing.
-  var CLEAN_TIDY_LEAD = 'some notes are one long wall of text. this puts a line break at your own full stops, so they can be read. not one word changes, and nothing is sent anywhere. and some notes kept the wrong date at the top — the day you saved it, not the day it was written. the run puts that right, and keeps both.';
+  var CLEAN_TIDY_LEAD = 'some notes are one long wall of text. this puts a line break at your own full stops, so they can be read. not one word changes, and nothing is sent anywhere. and some notes kept the wrong date at the top: the day you saved it, not the day it was written. the run puts that right, and keeps both.';
   var CLEAN_SCOPE_PICK = 'where shall it look?';
   var CLEAN_SCOPE_WHOLE = 'the whole vault';
   var CLEAN_PREVIEW_HEAD = 'here are the three that would change most';
@@ -7062,10 +7192,10 @@
   var CLEAN_PREVIEW_BEFORE = 'as it is now';
   var CLEAN_PREVIEW_AFTER = 'after';
   // #77 — owner pick B, 2026-08-28. Dates + line breaks both checked.
-  var CLEAN_PREVIEW_NONE = 'nothing to do here — the notes in this folder already have their line breaks, and none kept the wrong date at the top.';
+  var CLEAN_PREVIEW_NONE = 'nothing to do here. the notes in this folder already have their line breaks, and none kept the wrong date at the top.';
   var CLEAN_APPROVE_COPY = 'go ahead';
   var CLEAN_READING_COPY = 'looking through your notes…';
-  var CLEAN_WRITE_NOTHING = 'nothing needed changing — your files are exactly as you wrote them.';
+  var CLEAN_WRITE_NOTHING = 'nothing needed changing. your files are exactly as you wrote them.';
 
   // How many notes one page of the targets route carries. It matches the
   // server's own bound; the client walks the scope a page at a time so a
@@ -7200,7 +7330,7 @@
         });
         var seen = offset + rows.length;
         if (rows.length && seen < (data.total || 0)) {
-          slot.innerHTML = '<p>' + escapeHtml('looking — ' + seen + ' of ' +
+          slot.innerHTML = '<p>' + escapeHtml('looking: ' + seen + ' of ' +
             (data.total || 0) + '.') + '</p>';
           cleaningLookPage(slot, scope, seen);
           return;
@@ -7380,8 +7510,8 @@
     // this line exists not to repeat.
     if (totals.refused > 0) {
       lines.push(count(totals.refused,
-        'note was left exactly as it is — the room would not touch it.',
-        'notes were left exactly as they are — the room would not touch them.'));
+        'note was left exactly as it is; the room would not touch it.',
+        'notes were left exactly as they are; the room would not touch them.'));
     }
     if (CLEAN_RUN.unreadable > 0) {
       lines.push(count(CLEAN_RUN.unreadable,
@@ -7446,7 +7576,7 @@
       host.innerHTML = '<p style="' + escapeAttr(quiet) +
         ';margin:20px 0 8px">' + escapeHtml(CLEAN_RUNS_HEAD) + '</p>' +
         runs.map(function (r) {
-          var line = cleaningRunDate(r.at) + ' — ' +
+          var line = cleaningRunDate(r.at) + ': ' +
             count(r.notes, 'note', 'notes');
           return '<p style="margin:0 0 6px">' +
             '<span style="' + escapeAttr(quiet) + '">' +
@@ -7550,8 +7680,8 @@
 
   // Her words, byte-identical to the recorded rows C1 / C3 / C2 / C4.
   // ⚠ C4 carries NO terminal punctuation and ships exactly as written.
-  var VAULT_STATUS_TAIL = ' — connected.';
-  var VAULT_CONNECT_SUBLABEL = 'new notes from your vault arrive here — nothing in your vault is ever changed.';
+  var VAULT_STATUS_TAIL = ': connected.';
+  var VAULT_CONNECT_SUBLABEL = 'new notes from your vault arrive here. nothing in your vault is ever changed.';
   var VAULT_COLLECT_LABEL = "bring in what's new";
 
   // 26.97-10: her words for the REFUSAL, byte-identical to the recorded rows
@@ -7661,7 +7791,7 @@
         'padding:0 0 4px">connected apps</h3>' +
         (srcs.length === 0 ?
           '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
-          escapeHtml('No apps connected yet — connect Apple Notes or Apple Photos below.') +
+          escapeHtml('No apps connected yet. Connect Apple Notes or Apple Photos below.') +
           '</p>'
           :
           srcs.map(function (s) {
@@ -7680,20 +7810,20 @@
           '<p><button id="btn-manage-connect-notes" class="btn" ' +
           'type="button">' + escapeHtml('Apple Notes') + '</button></p>' +
           '<p style="color:var(--ink-soft);font-size:14px">' +
-          escapeHtml('your notes, brought in once — nothing in Notes is ever changed.') +
+          escapeHtml('your notes, brought in once. nothing in Notes is ever changed.') +
           '</p>' : '') +
         (srcs.indexOf('apple-photos') === -1 ?
           (PHOTOS_ONE_CLICK ?
             '<p><button id="btn-manage-connect-photos" class="btn" ' +
             'type="button">' + escapeHtml('Apple Photos') + '</button></p>' +
             '<p style="color:var(--ink-soft);font-size:14px">' +
-            escapeHtml('your photos, brought in once — nothing in Photos is ever changed.') +
+            escapeHtml('your photos, brought in once. nothing in Photos is ever changed.') +
             '</p>'
             :
             '<div class="card">' +
             '<p class="card-title">' +
             escapeHtml('Bringing in Apple Photos by hand') + '</p>' +
-            '<p>' + escapeHtml('A one-click Photos button is coming. For now: in Photos, select the pictures you want, choose File → Export, and save them to a folder — then bring that folder in below. Nothing in Photos is changed.') + '</p>' +
+            '<p>' + escapeHtml('A one-click Photos button is coming. For now: in Photos, select the pictures you want, choose File → Export, and save them to a folder, then bring that folder in below. Nothing in Photos is changed.') + '</p>' +
             '<p><button id="btn-manage-photos-fallback" class="btn" ' +
             'type="button">' + escapeHtml('bring that folder in') +
             '</button></p>' +
@@ -7869,8 +7999,8 @@
           // first sentence names the import screen from the outside, so
           // on the import screen itself it would be false.
           '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
-          escapeHtml('the same list the room shows you before an import ' +
-            '— edited here, it is edited there.') + '</p>' +
+          escapeHtml('the same list the room shows you before an import' +
+            ': edited here, it is edited there.') + '</p>' +
           '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
           escapeHtml('this list is her boundary, so it stays next to her.') +
           '</p>' +
@@ -8250,7 +8380,7 @@
       var note = box ? box.querySelector('.manage-sources-note') : null;
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + "couldn't save — try again." + '</p>';
+        'margin:8px 0 0">' + "couldn't save. try again." + '</p>';
     }
     var next = ((MANAGE.meta &&
       Array.isArray(MANAGE.meta.connected_sources)) ?
@@ -8338,7 +8468,7 @@
       // rather than replaced. The sentence is true for her and for a fresh
       // store alike. ⚠ THE WORDING IS ROUTED TO HER — see the SUMMARY.
       '<span>' + escapeHtml('Show links to my own private notes ' +
-      'when I open a reflection — off by default, and this ' +
+      'when I open a reflection, off by default, and this ' +
       'setting stays on this device. It only changes what you can click ' +
       'here; it never changes what is sent to the AI, and these notes still ' +
       'never appear on the shelf.') + '</span></label>' +
@@ -8354,12 +8484,12 @@
       '<p style="color:var(--ink-soft);font-size:14px;margin:16px 0 8px">' +
       escapeHtml('write kept reflections back to my vault') + '</p>' +
       '<p style="color:var(--never);font-size:14px;margin:0 0 8px">' +
-      escapeHtml("when this is on, a reflection you keep is also written into your vault as one NEW note in Claude's observation/Journal analysis — nothing already there is ever touched.") +
+      escapeHtml("when this is on, a reflection you keep is also written into your vault as one NEW note in Claude's observation/Journal analysis. nothing already there is ever touched.") +
       '</p>' +
       '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
       escapeHtml(wb
-        ? 'this is on — a reflection you keep is also written into your vault as one new note.'
-        : 'this is off — a kept reflection stays in the room and touches no vault file.') +
+        ? 'this is on: a reflection you keep is also written into your vault as one new note.'
+        : 'this is off: a kept reflection stays in the room and touches no vault file.') +
       '</p>' +
       '<p style="margin:0"><button type="button" ' +
       'class="reflect-writeback-toggle" style="' +
@@ -8395,7 +8525,7 @@
       var note = box ? box.querySelector('.reflect-writeback-note') : null;
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + escapeHtml("couldn't save — try again.") +
+        'margin:8px 0 0">' + escapeHtml("couldn't save. try again.") +
         '</p>';
     }
     apiPost('/api/meta', { reflection_writeback_enabled: target === true })
@@ -8515,7 +8645,7 @@
 
   function showDigOutRetry(id) {
     var slot = $('dig-out-confirm');
-    slot.innerHTML = '<p class="quiet-error">That did not save — the room ' +
+    slot.innerHTML = '<p class="quiet-error">That did not save; the room ' +
       'may not be reachable.</p>' +
       '<p><button type="button" class="btn digout-retry">try again' +
       '</button></p>';
@@ -8610,7 +8740,7 @@
     // carried the field has none — it renders without the when-clause
     // rather than an empty gap or an invented date.
     var when = importWhenPhrase(report.finished_ms, Date.now());
-    var text = (when ? 'last import — ' + when + ' — brought in ' :
+    var text = (when ? 'last import, ' + when + ': brought in ' :
       'last import: brought in ') +
       count(report.imported, 'thing', 'things');
     if (report.deduped) {
@@ -8756,7 +8886,7 @@
   function renderHabitAnchorCard() {
     var box = $('q2-habit-anchor');
     box.innerHTML = '<div class="card">' +
-      '<p>Want to attach the room to a moment — after therapy, Sunday ' +
+      '<p>Want to attach the room to a moment: after therapy, Sunday ' +
       'coffee, before bed?</p>' +
       '<p><button id="q2-yes" class="btn" type="button">yes</button> ' +
       '<button id="q2-no" class="btn" type="button">no</button> ' +
@@ -8798,13 +8928,13 @@
       habit_anchor_asked: true
     }).then(function (res) {
       if (!res.ok) {
-        quietError($('q2-note'), 'That could not be saved — the room may ' +
+        quietError($('q2-note'), 'That could not be saved; the room may ' +
           'not be reachable. The buttons above still work.');
         return;
       }
       $('q2-habit-anchor').innerHTML = '';
     }).catch(function () {
-      quietError($('q2-note'), 'That could not be saved — the room may ' +
+      quietError($('q2-note'), 'That could not be saved; the room may ' +
         'not be reachable. The buttons above still work.');
     });
   }
@@ -8959,7 +9089,7 @@
       apiGet('/api/layout').then(function (lres) {
         applyLayout(lres && lres.data && lres.data.layout);
       }).catch(function () {
-        console.warn('the stored arrangement could not be read — the ' +
+        console.warn('the stored arrangement could not be read; the ' +
           'shipped positions stand');
       }).then(function () {
         fitRoomScale();
@@ -9138,7 +9268,7 @@
     // line.
     //
     // ⛔ DRIVEN, NOT REASONED. Reproduced against the real chassis on a
-    // fixture library: after `joyful — bring it back` the picture, the caption
+    // fixture library: after `joyful: bring it back` the picture, the caption
     // and the row's data-offer-id were all UNCHANGED and the row's three
     // controls were gone — an empty shell. Reading the code five ways did not
     // find it; standing the Offer up and pressing the button did.
@@ -9776,7 +9906,7 @@
       // Fail-open: the room simply appears as today.
       WELCOME_DONE = null;
       document.body.classList.remove('welcome-back');
-      console.warn('the welcome could not play — the room appears as today');
+      console.warn('the welcome could not play; the room appears as today');
     }
   }
 
@@ -9979,6 +10109,18 @@
       // no welcome-back dim, no navigation, no text when nothing is new.
       startReflectionSession();
     });
+    // impact-metrics 05/08: wall survey poster — opens the Form URL only
+    // when the owner taps it (law 1). Never moment-triggered (law 3).
+    var surveyPoster = $('room-obj-survey-poster');
+    if (surveyPoster) {
+      surveyPoster.addEventListener('click', function () {
+        if (DESIGN) { return; }
+        var url = APP.surveyUrl;
+        if (!url || typeof url !== 'string') { return; }
+        if (url.indexOf('https://') !== 0) { return; }
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    }
     $('room-obj-candle').addEventListener('animationend', function (e) {
       $('room-obj-candle').classList.remove('playing');
       // 26.4-03: the settle is a ONE-SHOT keyframe alongside the steady
@@ -10327,7 +10469,7 @@
   // (FUNCTIONAL_IDS below).
   var ROOM_OBJECT_IDS = ['bookshelf', 'album', 'desk',
     'candle', 'plant', 'window', 'bench', 'chair', 'notebook', 'cardbox',
-    'pen-cup'];
+    'pen-cup', 'survey-poster'];
   // Shipped inline defaults, recorded at initRoom — the exact reset
   // targets for undo-to-empty and fail-open. CAUTION W-3: these sit
   // OFF the grid and must never enter LAYOUT.objects themselves; only
@@ -10667,9 +10809,9 @@
   // drop is the retry.
   function postLayout() {
     apiPost('/api/layout', LAYOUT).then(function (res) {
-      if (!res.ok) { console.warn("couldn't save — try again."); }
+      if (!res.ok) { console.warn("couldn't save. try again."); }
     }).catch(function () {
-      console.warn("couldn't save — try again.");
+      console.warn("couldn't save. try again.");
     });
   }
 
@@ -10968,7 +11110,7 @@
   // mode". It also left `CATALOG` in the same commit, so no second pen cup
   // can be placed: one id, one nature.
   var FUNCTIONAL_IDS = ['bookshelf', 'album', 'desk', 'candle',
-    'notebook', 'cardbox', 'pen-cup'];
+    'notebook', 'cardbox', 'pen-cup', 'survey-poster'];
 
   // The shipped decor pieces that stay removable in design mode: remove
   // hides the shipped button through the design-owned mechanism
@@ -11766,7 +11908,7 @@
     if (!slot) { return; }
     // the offer line stays ONE source literal — Suite 4 pins it byte-exactly
     slot.innerHTML = (withLead ? '<p>' +
-      escapeHtml('the librarian can pre-sort what just arrived — want suggestions?') +
+      escapeHtml('the librarian can pre-sort what just arrived. want suggestions?') +
       '</p>' : '') +
       '<p><button type="button" class="btn librarian-sort-meta">' +
       'sort by titles and dates</button> ' +
@@ -11811,7 +11953,7 @@
       '<p><button type="button" class="btn librarian-consent-meta">' +
       'just titles and dates</button> ' +
       '<button type="button" class="btn librarian-consent-full">' +
-      'yes — read and sort</button></p></div>';
+      'yes: read and sort</button></p></div>';
     slot.querySelector('.librarian-consent-meta').addEventListener(
       'click', function () {
         startLibrarianPresort(root, false);
@@ -11857,7 +11999,7 @@
         }
       }).catch(function () {
         if (slot) {
-          quietError(slot, 'the room could not be reached — is the ' +
+          quietError(slot, 'the room could not be reached. is the ' +
             'server still running in your terminal?');
         }
       });
@@ -11917,7 +12059,7 @@
   // notebook is re-merged after every batch, and the stop is cooperative
   // rather than a kill — so the only work at risk is the call in flight,
   // and even that is merged before the run ends.
-  var LIBRARIAN_STOP_COPY = 'stop sorting — it keeps what it\'s found';
+  var LIBRARIAN_STOP_COPY = 'stop sorting (it keeps what it\'s found)';
 
   // ⛔⛔ THE SHELL IS BUILT ONCE AND THE NUMBERS ARE WRITTEN INTO IT, and
   // that is the whole reason this function grew. This readout is repainted
@@ -11960,7 +12102,7 @@
     var countEl = slot.querySelector('.librarian-progress-count');
     var etaEl = slot.querySelector('.librarian-progress-eta');
     if (countEl) {
-      countEl.innerHTML = escapeHtml('sorting — batch ' +
+      countEl.innerHTML = escapeHtml('sorting: batch ' +
         (snap.done || 0) + ' of ' + (snap.total || 0) + '.');
     }
     if (etaEl) {
@@ -12058,7 +12200,7 @@
     // one-shot deferral each time — armed here, never repeating on its
     // own.
     if (misses >= 3) {
-      quietError(slot, 'the room could not be heard from just now — ' +
+      quietError(slot, 'the room could not be heard from just now. ' +
         'look back in a little while.');
       return;
     }
@@ -12094,7 +12236,7 @@
   // ⚠ It says what would fill the pane and asks her for nothing (law 3: no
   // count of what is missing, no invitation to go and do something).
   var NOTICED_EMPTY_COPY =
-    'nothing noticed yet — the librarian points things out while it sorts the pile.';
+    'nothing noticed yet. the librarian points things out while it sorts the pile.';
 
   function renderNoticedSection() {
     var box = $('manage-sec-noticed');
@@ -12230,7 +12372,7 @@
     slot.innerHTML =
       (groups.joyful.length === 0 ? '' :
         '<p class="card-title">' +
-        escapeHtml('these look joyful — worth a look?') + '</p>' +
+        escapeHtml('these look joyful. worth a look?') + '</p>' +
         groups.joyful.map(function (row) {
           return '<div class="card librarian-row">' +
             '<p class="card-title" style="margin:0 0 4px">' +
@@ -12267,7 +12409,7 @@
         }).join('')) +
       (groups.heavy.length === 0 ? '' :
         '<p class="card-title">' +
-        escapeHtml('these might be heavy — set aside unshown?') +
+        escapeHtml('these might be heavy. set aside unshown?') +
         '</p>' +
         groups.heavy.map(function (row) {
           return '<div class="card librarian-row">' +
@@ -12389,7 +12531,7 @@
   function showLibrarianHeavyRetry(id, slot, refresh) {
     if (!slot) { return; }
     slot.innerHTML = '<p class="quiet-error">That choice did not save ' +
-      '— the room may not be reachable.</p>' +
+      'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn librarian-heavy-retry">try ' +
       'saving again</button></p>';
     slot.querySelector('.librarian-heavy-retry').addEventListener(
@@ -12466,10 +12608,10 @@
   // three providers, and it is this control that cannot say so yet.
   var VOICE_NO_CHOICE_COPY = "choosing a model isn't available with what is answering here.";  // noqa: E501
   // the shipped quiet-failure line, byte-identical to the toggle's own
-  var VOICE_FAIL_COPY = "couldn't save — try again.";
+  var VOICE_FAIL_COPY = "couldn't save. try again.";
   var VOICE_ENV_HEAD = 'a setting in your shell is using ';
   var VOICE_ENV_TAIL = ' right now instead.';
-  var VOICE_ENV_BAD_HEAD = "something in your shell asked for a model i don't have — using ";
+  var VOICE_ENV_BAD_HEAD = "something in your shell asked for a model i don't have; using ";
   var VOICE_ENV_BAD_TAIL = ' instead.';
   // the third .librarian-status line — deliberately worded UNLIKE the
   // picker's own state line, because the two answer different questions
@@ -12784,7 +12926,7 @@
   // byte-exact; she was shown the inconsistency on 2026-08-13 and chose to
   // keep it rather than amend #35. Do not normalise it.
   var CLT_MISSING_COPY =
-    'Reading photos — needs Xcode Command Line Tools — xcode-select --install';
+    'Reading photos needs Xcode Command Line Tools: xcode-select --install';
 
   // ---- 26.99-09 (D-11/D-12/D-15): the room's half of the consent ---------
   //
@@ -13017,9 +13159,9 @@
       // binary the librarian stopped using — the two ways to give this room
       // a librarian are a key she brings or a model on her own machine.
       authLine = librarian.why ||
-        'nothing can answer yet — run python3 server.py --setup to add a key, or start a model on your own machine.';
+        'nothing can answer yet. run python3 server.py --setup to add a key, or start a model on your own machine.';
     } else if (librarian.auth === 'api-key') {
-      billingLine = 'using your API key — usage is billed to that key.';
+      billingLine = 'using your API key; usage is billed to that key.';
     }
     // ⚠ THE BOX IS NOW CONDITIONAL, and that is a consequence of the move
     // rather than a preference. `.librarian-status` carries a background, a
@@ -13099,8 +13241,8 @@
         '<p class="librarian-state-line" style="color:var(--ink-soft);' +
         'font-size:14px;margin:0 0 8px">' +
         escapeHtml(isOn
-          ? 'the librarian is in — it suggests, you decide.'
-          : 'the librarian is off — the room is fully yours alone.') +
+          ? 'the librarian is in: it suggests, you decide.'
+          : 'the librarian is off: the room is fully yours alone.') +
         '</p>' +
         '<p style="margin:0"><button type="button" ' +
         'class="librarian-toggle" style="' +
@@ -13131,7 +13273,7 @@
       // one is about WHO READS HER THINGS, and ruled the ban warranted on the
       // same argument: this pane is the most prominent place in the room a
       // false statement can stand.
-      escapeHtml('nothing here ever leaves this computer. when a job needs a big model, a copy of the text is sent to be read and the answer comes back — the thing itself stays where it is, and stays yours.') +
+      escapeHtml('nothing here ever leaves this computer. when a job needs a big model, a copy of the text is sent to be read and the answer comes back. the thing itself stays where it is, and stays yours.') +
       '</p>' +
       // 26.99-07 (D-05): the standing per-job list's slot, DIRECTLY under
       // the line above it. ⚠ THE POSITION IS THE COPY RECORD'S, NOT A
@@ -13143,7 +13285,7 @@
       // constant must not acquire a second literal (§S-04 rule 3 and 4).
       '<div class="librarian-job-list"></div>' +
       '<p style="color:var(--ink-soft);font-size:14px;margin:0 0 8px">' +
-      escapeHtml('your never-show, retired, and trigger-marked items stay on this machine — not even their titles are sent.') +
+      escapeHtml('your never-show, retired, and trigger-marked items stay on this machine; not even their titles are sent.') +
       '</p>' +
       // ⭐⭐ 26.99955-10 (D-09-C) — HER RULING: "Move it into the card".
       // ⛔ MOVED WHOLE, AND THAT IS DELIBERATE: the same sentence, the same
@@ -13426,7 +13568,7 @@
   // come across is that SHE cleared hers mid-walk-through while testing
   // something else, which is what anyone would do with a clearly-labelled
   // button.
-  var CALL_RECORD_CLEAR = 'clear the log, nothing else goes away — but this record does';  // noqa: E501
+  var CALL_RECORD_CLEAR = 'clear the log. nothing else goes away, but this record does';  // noqa: E501
 
   // ⭐⭐ HER CONFIRM SENTENCE — 26.99955 UAT G-…-10, 2026-08-26, verbatim.
   // ⛔ NOT recapitalised, not repunctuated, not shortened. D-14.
@@ -13472,7 +13614,7 @@
   // asks her for nothing (law 3: nothing counted, nothing to go and do).
   // ⚠ `job` and `who answered` are accurate for every row this file holds,
   // including the jobs that run on her own machine and send nothing anywhere.
-  var CALL_RECORD_EMPTY = 'nothing yet — every job the librarian runs shows up here, and who answered it.';  // noqa: E501
+  var CALL_RECORD_EMPTY = 'nothing yet. every job the librarian runs shows up here, and who answered it.';  // noqa: E501
 
   // ⚠ HER SENTENCE, BYTE-FOR-BYTE from the 2026-08-17 UAT record — the
   // third of the three fills she approved as a set, after rejecting all
@@ -14088,7 +14230,7 @@
       var note = box ? box.querySelector('.librarian-toggle-note') : null;
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + "couldn't save — try again." + '</p>';
+        'margin:8px 0 0">' + "couldn't save. try again." + '</p>';
     }
     apiPost('/api/meta', { librarian_enabled: target === true })
       .then(function (res) {
@@ -14294,9 +14436,9 @@
     slot.innerHTML = '<p>' + escapeHtml(String(data.text || '')) +
       '</p>' +
       '<p><button type="button" class="btn btn-never desk-q-dismiss">' +
-      escapeHtml("not this — don't ask again") + '</button> ' +
+      escapeHtml("not this: don't ask again") + '</button> ' +
       '<button type="button" class="btn desk-q-yes">' +
-      escapeHtml("yes — I'll set that up") + '</button></p>' +
+      escapeHtml("yes: I'll set that up") + '</button></p>' +
       '<div class="desk-q-note"></div>';
     slot.querySelector('.desk-q-dismiss').addEventListener('click',
       function () {
@@ -14306,7 +14448,7 @@
             if (!res.ok) {
               if (note) {
                 quietError(note, errorText(res, 'that could not be ' +
-                  'saved — the room may not be reachable.'));
+                  'saved; the room may not be reachable.'));
               }
               return;
             }
@@ -14315,7 +14457,7 @@
             box.innerHTML = '';
           }).catch(function () {
             if (note) {
-              quietError(note, 'that could not be saved — the room ' +
+              quietError(note, 'that could not be saved; the room ' +
                 'may not be reachable.');
             }
           });
@@ -14375,9 +14517,9 @@
     box.innerHTML = '<div class="card desk-aside-card">' +
       '<p>' + escapeHtml(String(card.text || '')) + '</p>' +
       '<p><button type="button" class="btn btn-never desk-aside-quiet">' +
-      escapeHtml("not this — don't ask again") + '</button> ' +
+      escapeHtml("not this: don't ask again") + '</button> ' +
       '<button type="button" class="btn desk-aside-yes">' +
-      escapeHtml("yes — I'll set that up") + '</button></p>' +
+      escapeHtml("yes: I'll set that up") + '</button></p>' +
       '<div class="desk-aside-note"></div></div>';
     var quietBtn = box.querySelector('.desk-aside-quiet');
     var yesBtn = box.querySelector('.desk-aside-yes');
@@ -14389,14 +14531,14 @@
           if (!res.ok) {
             if (note) {
               quietError(note, errorText(res, 'that could not be ' +
-                'saved — the room may not be reachable.'));
+                'saved; the room may not be reachable.'));
             }
             return;
           }
           box.innerHTML = '';
         }).catch(function () {
           if (note) {
-            quietError(note, 'that could not be saved — the room ' +
+            quietError(note, 'that could not be saved; the room ' +
               'may not be reachable.');
           }
         });
@@ -14453,7 +14595,7 @@
         escapeHtml(String(res.data.why || 'no note this time.')) +
         '</p>';
     }).catch(function () {
-      quietError(noteSlot, 'the room could not be reached — is the ' +
+      quietError(noteSlot, 'the room could not be reached. is the ' +
         'server still running in your terminal?');
     });
   }
@@ -14763,7 +14905,7 @@
       if (!res.ok) {
         var bar = $('proposals-bar');
         if (bar) {
-          quietError(bar, errorText(res, 'that could not be saved — the ' +
+          quietError(bar, errorText(res, 'that could not be saved; the ' +
             'room may not be reachable.'));
         }
         return;
@@ -14775,7 +14917,7 @@
     }).catch(function () {
       var bar = $('proposals-bar');
       if (bar) {
-        quietError(bar, 'the room could not be reached — is the server ' +
+        quietError(bar, 'the room could not be reached. is the server ' +
           'still running in your terminal?');
       }
     });
@@ -14791,7 +14933,7 @@
       if (!res.ok) {
         var bar = $('proposals-bar');
         if (bar) {
-          quietError(bar, errorText(res, 'that could not be saved — the ' +
+          quietError(bar, errorText(res, 'that could not be saved; the ' +
             'room may not be reachable.'));
         }
         return;
@@ -14803,7 +14945,7 @@
     }).catch(function () {
       var bar = $('proposals-bar');
       if (bar) {
-        quietError(bar, 'the room could not be reached — is the server ' +
+        quietError(bar, 'the room could not be reached. is the server ' +
           'still running in your terminal?');
       }
     });
@@ -16458,7 +16600,7 @@
     // Pinned AGAINST that heading by tests/test_diegetic_wiring.cjs, so
     // the two can only ever change together.
     firstLook: 'A first look through your things',
-    bless: 'joyful — bring it back',
+    bless: 'joyful: bring it back',
     aside: 'put it away for good',
     // ✅ 2026-08-17 — HER COPY PASS RAN. `copy_approved: true` in
     // 26.95-COPY.md. All FIVE sentences below are hers: `notRelevant` (C-4)
@@ -16468,7 +16610,7 @@
     // answer, not a blank. ⛔ `captionTemplate` above is the one row still
     // owed: she asked for the real years and that is a BUILD, not a string.
     notRelevant: 'not relevant for my feelings',
-    notRelevantSaid: "done — this one won't come round again.",
+    notRelevantSaid: "done. this one won't come round again.",
     // ✅ 26.95-57 — C-14, HERS, 2026-08-17, written cold after three complete
     // candidates were offered and rejected ("no, not quite"). ⚠ SHE CHANGED
     // THE SHAPE, NOT THE WORDS: asked whether set-aside should CONFIRM before
@@ -16478,7 +16620,7 @@
     // `undo` were each confirmed WITH her, never absorbed by an agent.
     asideSaid: "ok, this photo won't show up in your room again.",
     undo: 'undo',
-    walkBookend: 'something you brought back led here — a few from the same weeks, other years.',
+    walkBookend: 'something you brought back led here: a few from the same weeks, other years.',
     walkQuiet: 'not today',
     albumPile: "something from a while back, if you'd like."
   };
@@ -16601,7 +16743,7 @@
   //
   // The row now carries FOUR controls (26.996-03). Two are `.btn` controls
   // re-using the shipped labels; two are quiet underlined links — `not
-  // relevant` and `heavy — stop bringing these` (#118). The note slot below
+  // relevant` and `heavy: stop bringing these` (#118). The note slot below
   // is where the quiet acknowledgement lands, where the naming prompt opens,
   // and where a failed save reports. Her guided first pass deliberately
   // reaches none of this — D-13, pinned by a negative case.
@@ -16620,11 +16762,11 @@
     'background:none;border:none;color:var(--ink-soft);' +
     'cursor:pointer;font:inherit;text-decoration:underline';
   var HEAVY_COPY = {
-    linkLabel: 'heavy — stop bringing these',
+    linkLabel: 'heavy: stop bringing these',
     // 26.996-11 / #130 (S-3): told once at the naming prompt.
     warningOnce: 'The name stays here for hiding. The reflection ritual you run still sends it out with your writing, about three times a month, whether or not anything is noticed.',
     // 26.996-11 / #113 (F1): group-shot question prompt.
-    groupShotPrompt: 'a few of these look like the same gathering — set those aside too?'
+    groupShotPrompt: 'a few of these look like the same gathering. set those aside too?'
   };
   var HEAVY_NAME_MAX_CP = 200;
 
@@ -17290,7 +17432,7 @@
   // already says.
   function showAsideUndoRetry(id, slot) {
     if (!slot) { return; }
-    slot.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    slot.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn offer-aside-undo-retry">try ' +
       'saving again</button></p>';
@@ -17447,7 +17589,7 @@
   // ⛔ No new error copy: the shipped sentence, as everywhere else.
   function showNotRelevantUndoRetry(id, slot) {
     if (!slot) { return; }
-    slot.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    slot.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn offer-notrel-undo-retry">try ' +
       'saving again</button></p>';
@@ -17460,7 +17602,7 @@
   // rather than re-written, so this phase adds no error copy of its own.
   function showNotRelevantRetry(id, slot) {
     if (!slot) { return; }
-    slot.innerHTML = '<p class="quiet-error">That choice did not save — ' +
+    slot.innerHTML = '<p class="quiet-error">That choice did not save; ' +
       'the room may not be reachable.</p>' +
       '<p><button type="button" class="btn offer-notrel-retry">try ' +
       'saving again</button></p>';
@@ -19577,7 +19719,7 @@
     if (entry.author === 'librarian') {
       var suffix = document.createElement('span');
       suffix.style.color = 'var(--ink-soft)';
-      suffix.textContent = ' — the librarian';
+      suffix.textContent = ', the librarian';
       why.appendChild(suffix);
     }
     var wy = entry.isImage ? g.whyImage : g.whyText;
@@ -21470,7 +21612,7 @@
       var err = document.createElement('button');
       err.type = 'button';
       err.className = 'station-caption-add station-nb-row station-nb-error';
-      var says = NB_SAVE_REASON || "couldn't save — try again.";
+      var says = NB_SAVE_REASON || "couldn't save. try again.";
       if (says.length > NB_SAVE_REASON_CAP) {
         says = says.slice(0, NB_SAVE_REASON_CAP - 1) + '…';
       }
@@ -22808,7 +22950,7 @@
       fillInsightPieces(box);
     } else if (book.kind === 'never') {
       box.innerHTML = '<p class="insight-observe">' +
-        escapeHtml('Things here still waiting for a first read — open one ' +
+        escapeHtml('Things here still waiting for a first read. Open one ' +
           'when you like.') + '</p>' +
         book.ids.map(function (id) {
           var item = INSIGHTS.items[id];
@@ -22832,7 +22974,7 @@
         escapeHtml('What your library holds, by the tags and folders your ' +
           'things already carry:') + '</p>' +
         book.order.map(function (k) {
-          return '<p style="margin:0 0 4px">' + escapeHtml(k) + ' — ' +
+          return '<p style="margin:0 0 4px">' + escapeHtml(k) + ': ' +
             escapeHtml(String(book.themes[k])) + '</p>';
         }).join('');
     } else if (book.kind === 'seasons') {
@@ -22842,7 +22984,7 @@
         book.order.map(function (k) {
           var buckets = book.seasons[k];
           var parts = Object.keys(buckets).map(function (s) {
-            return escapeHtml(s) + ' — ' + escapeHtml(String(buckets[s]));
+            return escapeHtml(s) + ': ' + escapeHtml(String(buckets[s]));
           }).join('; ');
           return '<p style="margin:0 0 4px"><strong>' + escapeHtml(k) +
             '</strong>: ' + parts + '</p>';
@@ -23016,7 +23158,7 @@
     var rows = list.length === 0
       ? [EMPTY_SHELF_HEAD + ' ' + EMPTY_SHELF_BODY]
       : list.map(function (book) {
-          return book.title + ' — ' + libraryRowObservation(book);
+          return book.title + ': ' + libraryRowObservation(book);
         });
     // Stamp-or-omit: only when APP.releaseDate is a non-empty string from
     // the one status reader. Digits are a technical fact; no invented prose.
@@ -23093,7 +23235,7 @@
   //
   // ⚠ PROVENANCE — TIER 2, APPROVED-AS-SHOWN. Four candidates were offered
   // and she chose B1, which deliberately echoes the shape of the failure line
-  // she had already approved — `couldn't save — try again.` ⛔ THAT CLAIM WAS
+  // she had already approved — `couldn't save. try again.` ⛔ THAT CLAIM WAS
   // CHECKED AGAINST THE SHIPPED BYTES BEFORE IT WAS MADE, because an
   // annotation saying "this is your existing wording" is a claim about shipped
   // bytes and this project has been bitten by exactly that once already.
@@ -23105,7 +23247,7 @@
   //
   // ⛔⛔ PINNED AGAINST `26.96-DECISIONS.md`, NEVER THE OTHER WAY ROUND
   // (T-26.96-42). See tests/test_roster_ruled_copy.cjs.
-  var ROSTER_UNREAD_LINE = "couldn't read your list — try again.";
+  var ROSTER_UNREAD_LINE = "couldn't read your list. try again.";
 
   // -- 26.96-27/-28: THE PICKER'S THREE SENTENCES, ONE NAMED SEAT EACH -----
   //
@@ -23913,7 +24055,7 @@
         // un-alarming line — never a bare pane, and the add field below
         // still renders, so the empty state is never a dead end.
         '<div class="vault-roster-list"><p>' +
-          escapeHtml('nothing flagged yet — add a ' +
+          escapeHtml('nothing flagged yet. add a ' +
             'folder to keep private') + '</p>' +
           // She just let the last one be read again: the empty line is a fact
           // about the list, her sentence is what her tap actually reached.
@@ -24460,7 +24602,7 @@
   // one literal — "settable without a rebuild" is the property, and a
   // concatenation across two lines silently defeats it.
   // eslint-disable-next-line max-len
-  var ROSTER_ADD_FUTURE_ONLY = 'Kept private from now on — anything already here from that folder stays where it is.';
+  var ROSTER_ADD_FUTURE_ONLY = 'Kept private from now on. Anything already here from that folder stays where it is.';
 
   // ⛔ A THIRD EMPTY SEAT, AND THE SAME LAW AS THE OTHER TWO (F-7, owner
   // sitting 2026-08-20). She typed a folder name that matches nothing in her
@@ -24512,7 +24654,7 @@
   function rosterSentence(op, retroactive, known) {
     if (op !== 'add') {
       return 'The librarian can read that folder again. Things already set ' +
-        'aside stay set aside — you can bring any of them back yourself, ' +
+        'aside stay set aside; you can bring any of them back yourself, ' +
         'one at a time.';
     }
     // ⛔ STRICTLY `=== false`, AND NOTHING LOOSER (F-7). `null` is "the room
@@ -24521,7 +24663,7 @@
     // store doubt a name she typed perfectly well.
     if (known === false) { return ROSTER_ADD_NAME_UNKNOWN; }
     return retroactive === true ?
-      'Kept private from now on — and anything already here from ' +
+      'Kept private from now on, and anything already here from ' +
         'that folder is set aside too.' :
       ROSTER_ADD_FUTURE_ONLY;
   }
@@ -24597,7 +24739,7 @@
   // F-2 — this wrote her sentence onto ONE line under white-space:nowrap with
   // overflow:hidden and text-overflow:ellipsis. Her C3 needs ~600px and the
   // pane gives it ~474px, so what she actually saw was
-  //   "Kept private from now on — and anything already here from that fol…"
+  //   "Kept private from now on, and anything already here from that fol…"
   // ⛔ The sentence now WRAPS. It is never cut, at any width. The bytes were
   // always right; what reached her eyes was not, and only a real browser
   // could see the difference — no source-level check could.
@@ -24709,7 +24851,7 @@
       var note = host.querySelector('.vault-roster-note');
       if (!note) { return; }
       note.innerHTML = '<p style="color:var(--ink-soft);font-size:14px;' +
-        'margin:8px 0 0">' + "couldn't save — try again." + '</p>';
+        'margin:8px 0 0">' + "couldn't save. try again." + '</p>';
     });
   }
 
@@ -24781,7 +24923,7 @@
         if (!res || !res.ok || !res.data ||
             !Array.isArray(res.data.fenced_roster)) {
           // ⚠ An OLDER failed write must not paint its sentence over a surface
-          // a newer act already owns: "couldn't save — try again." would then
+          // a newer act already owns: "couldn't save. try again." would then
           // be read as being about the newer act, which may well have saved.
           if (rosterPaintCurrent(claim)) { rosterWriteFailed(); }
           return null;
@@ -24850,7 +24992,7 @@
           // ⚠⚠ 26.95-03 (#92): THE CALL THAT WAS MISSING, AND IT IS THE
           // WHOLE DEFECT. The line above paints the first frame; without
           // this one it was also the LAST frame. A person brought in their
-          // whole vault, watched "copying your things in — 0 of N" for as
+          // whole vault, watched "copying your things in: 0 of N" for as
           // long as they were willing to, and never saw it move or finish —
           // while the import completed correctly underneath and the items
           // landed in the store. The comment above this function once
@@ -24868,7 +25010,7 @@
       }).catch(function () {
         if (box) {
           quietError(box, 'The room could not be reached, so nothing was ' +
-            'brought in — is the server still running in your terminal?');
+            'brought in. is the server still running in your terminal?');
         }
       });
     }
@@ -24969,7 +25111,7 @@
       '<h1 class="room-title">' + escapeHtml('The Study Room') + '</h1>' +
       '<p>' + escapeHtml('This isn\'t a to-do app you finish. It\'s a ' +
         'room where a librarian shows you how the things you saved connect ' +
-        'to what you\'re living now — and you decide what earns a place. ' +
+        'to what you\'re living now, and you decide what earns a place. ' +
         'Everything stays on your computer.') + '</p>' +
       '<p><button id="btn-onb-step-inside" class="btn" type="button">' +
       escapeHtml('step inside') + '</button></p>';
@@ -24991,7 +25133,7 @@
     el.innerHTML =
       '<h2>' + escapeHtml('Meet the one who keeps your room') + '</h2>' +
       '<p>' + escapeHtml('A candle sits on the desk, always lit. It\'s ' +
-        'your librarian — it reads what you bring in, finds threads ' +
+        'your librarian: it reads what you bring in, finds threads ' +
         'between your past and your present, and leaves them for you to ' +
         'look at. It only ever suggests; you\'re the one who decides what ' +
         'stays.') + '</p>' +
@@ -25006,7 +25148,7 @@
       '<p><button id="btn-onb-name-skip" type="button" ' +
       'style="background:none;border:none;color:var(--ink-soft);' +
       'cursor:pointer;font:inherit;text-decoration:underline">' +
-      escapeHtml('skip — I\'ll name it later') + '</button></p>';
+      escapeHtml('skip: I\'ll name it later') + '</button></p>';
     $('btn-onb-name').addEventListener('click', function () {
       var input = $('onb-candle-name');
       var value = (input && input.value ? input.value : '')
@@ -25080,14 +25222,14 @@
     if (!el) { return; }
     el.innerHTML =
       '<h2>' + escapeHtml('Point the librarian at your things') + '</h2>' +
-      '<p>' + escapeHtml('Bring in a folder from your computer — your ' +
+      '<p>' + escapeHtml('Bring in a folder from your computer: your ' +
         'notes, your photos, your writing. Nothing inside it is ever ' +
         'changed; the room keeps its own copies. (Notion comes in once, ' +
-        'as a one-time copy — never kept in sync.)') + '</p>' +
+        'as a one-time copy, never kept in sync.)') + '</p>' +
       '<div class="card">' +
       '<p class="card-title">' + escapeHtml('Kept private') + '</p>' +
       '<p>' + escapeHtml('Some folders are kept private the moment they ' +
-        'arrive — the room starts with ' + rosterNames(VAULT_DEFAULT_ROSTER) +
+        'arrive; the room starts with ' + rosterNames(VAULT_DEFAULT_ROSTER) +
         ". It goes by the folder's name, so if you call yours " +
         'something else, add it below.') + '</p>' +
       '<p>' + escapeHtml('The librarian never reads them, never names ' +
@@ -25111,7 +25253,7 @@
       '<p><button id="btn-onb-source-notes" class="btn" type="button">' +
       escapeHtml('Apple Notes') + '</button></p>' +
       '<p style="color:var(--ink-soft);font-size:14px">' +
-      escapeHtml('your notes, brought in once — nothing in Notes is ever changed.') +
+      escapeHtml('your notes, brought in once. nothing in Notes is ever changed.') +
       '</p>' +
       // 26.65-03 (D-07): when the one-click path holds, the Apple Photos
       // button + never-changed sublabel sit beside Notes in the same card,
@@ -25121,7 +25263,7 @@
         '<p><button id="btn-onb-source-photos" class="btn" type="button">' +
         escapeHtml('Apple Photos') + '</button></p>' +
         '<p style="color:var(--ink-soft);font-size:14px">' +
-        escapeHtml('your photos, brought in once — nothing in Photos is ever changed.') +
+        escapeHtml('your photos, brought in once. nothing in Photos is ever changed.') +
         '</p>'
         : '') +
       '</div>' +
@@ -25134,7 +25276,7 @@
         '<div class="card">' +
         '<p class="card-title">' +
         escapeHtml('Bringing in Apple Photos by hand') + '</p>' +
-        '<p>' + escapeHtml('A one-click Photos button is coming. For now: in Photos, select the pictures you want, choose File → Export, and save them to a folder — then bring that folder in below. Nothing in Photos is changed.') + '</p>' +
+        '<p>' + escapeHtml('A one-click Photos button is coming. For now: in Photos, select the pictures you want, choose File → Export, and save them to a folder, then bring that folder in below. Nothing in Photos is changed.') + '</p>' +
         '<p><button id="btn-photos-fallback-import" class="btn" type="button">' +
         escapeHtml('bring that folder in') + '</button></p>' +
         '</div>') +
@@ -25187,7 +25329,7 @@
   // The collect runs on ONE explicit tap of the Apple Notes button (law 1):
   // there is no background trigger on this path, and the one-shot re-read
   // chain below dies with the screen. Two honest phases, two readouts (law 6):
-  // the NEW thin export line ("reading your notes — N of M.") reads GET
+  // the NEW thin export line ("reading your notes: N of M.") reads GET
   // /api/adapter/progress while the export delta is gathered; the copy phase
   // reuses the shipped renderImportProgress verbatim off GET
   // /api/import-progress; and on done the shipped import report renders (ONB
@@ -25240,8 +25382,8 @@
         '<p>' + escapeHtml('macOS will ask ') +
         '<strong>' + escapeHtml('once') + '</strong>' +
         escapeHtml(source === 'apple-photos'
-          ? ' to let the room reach your Photos — say OK. The room only ever reads; it never changes a thing.'
-          : ' to let the room reach your Notes — say OK. The room only ever reads; it never changes a thing.') +
+          ? ' to let the room reach your Photos, say OK. The room only ever reads; it never changes a thing.'
+          : ' to let the room reach your Notes, say OK. The room only ever reads; it never changes a thing.') +
         '</p>' +
         '<p class="onb-adapter-checking">' + escapeHtml('checking…') + '</p>';
       }
@@ -25286,7 +25428,7 @@
       }).catch(function () {
         reenableNotes();
         renderAdapterError(box, 'The room could not be reached, so nothing ' +
-          'was brought in — is the server still running in your terminal?');
+          'was brought in. is the server still running in your terminal?');
       });
     });
   }
@@ -25302,9 +25444,9 @@
     // sentence about her data. ⛔ No wording is invented here; that line
     // already ships.
     var lead = (ACTIVE_ADAPTER.source === 'apple-photos') ?
-      'collecting your photos — ' :
+      'collecting your photos: ' :
       ((ACTIVE_ADAPTER.source === VAULT_SOURCE) ?
-        'copying your things in — ' : 'reading your notes — ');
+        'copying your things in: ' : 'reading your notes: ');
     // ⛔⛔ HER RULING 2026-08-23: THE CLOSE LINE DOES NOT RENDER IN THE ROOM.
     //
     // Her words, on beat 1 of the sitting, unprompted: "the last line said you
@@ -25331,8 +25473,12 @@
     // seam-evident — tests/test_no_push.cjs refuses exactly that, and it
     // refused this on the first attempt. Every segment below is escaped AT the
     // assignment, which is the rule this function already followed.
+    //
+    // 26.997: paint into `.collect-progress-body` so the stop button survives
+    // the 1 Hz repaint (Don't destroy the way out under her finger).
+    var host = collectProgressBody(box);
     if (box && box.id === 'room-repull-readout') {
-      box.innerHTML = '<p>' + escapeHtml(lead +
+      host.innerHTML = '<p>' + escapeHtml(lead +
         (snap.done || 0) + ' of ' + (snap.total || 0) + '.') + '</p>' +
         '<p>' + escapeHtml(importEtaLine(snap)) + '</p>';
       // Her ruled answer to a mid-collect candle tap rides every repaint of
@@ -25340,13 +25486,22 @@
       // The run's ENDING paints elsewhere and never re-seats it, so the note
       // cannot outlive the collect it is about.
       if (REPULL.candleAsked) { candleBusyNoteSeat(); }
+      if (ACTIVE_ADAPTER.source === 'apple-photos') {
+        REPULL.longWaitAttempted = snap.total || 0;
+        // Export stage: nothing is committed into the room yet — M is 0.
+        appendLongWaitW1(host, snap, snap.total || 0, 0);
+      }
       return;
     }
-    box.innerHTML = '<p>' + escapeHtml(lead +
+    host.innerHTML = '<p>' + escapeHtml(lead +
       (snap.done || 0) + ' of ' + (snap.total || 0) + '.') + '</p>' +
       '<p>' + escapeHtml(importEtaLine(snap)) + '</p>' +
       '<p>' + escapeHtml('you can close this; the room will be ready.') +
       '</p>';
+    if (ACTIVE_ADAPTER.source === 'apple-photos') {
+      REPULL.longWaitAttempted = snap.total || 0;
+      appendLongWaitW1(host, snap, snap.total || 0, 0);
+    }
   }
 
   // A failed collect: the route's plain message mapped to the calm -1743 vs
@@ -25587,11 +25742,11 @@
     // exported set, so the next pull tries them again). Applied by
     // extraction from the record; the em-dash is part of the line.
     if (photos && m.indexOf('none of your photos came back') !== -1) {
-      return "The room finished — but the pictures it went for couldn't be brought in this time. They aren't lost, and it will try them again the next time you bring photos in.";
+      return "The room finished, but the pictures it went for couldn't be brought in this time. They aren't lost, and it will try them again the next time you bring photos in.";
     }
     return photos ?
-      "Couldn't reach Photos just now — nothing was lost. Try again in a moment." :
-      "Couldn't reach Notes just now — nothing was lost. Try again in a moment.";
+      "Couldn't reach Photos just now. Nothing was lost. Try again in a moment." :
+      "Couldn't reach Notes just now. Nothing was lost. Try again in a moment.";
   }
 
   // 26.65-07: the honest PARTIAL — the third of the three outcomes the
@@ -25620,9 +25775,9 @@
     // and the true statement that a later pull of hers will try them again
     // (they never entered the record of what has been brought in).
     if (n === 1) {
-      return "1 picture couldn't be brought in this time — it isn't lost, and the room will try it again the next time you bring photos in.";
+      return "1 picture couldn't be brought in this time. It isn't lost, and the room will try it again the next time you bring photos in.";
     }
-    return n + " pictures couldn't be brought in this time — they aren't lost, and the room will try them again the next time you bring photos in.";
+    return n + " pictures couldn't be brought in this time. They aren't lost, and the room will try them again the next time you bring photos in.";
   }
 
   // 26.65-08: videos, said once, calmly, and never as a fault of hers. This
@@ -25639,9 +25794,9 @@
     var n = expReport.skipped.video;
     if (typeof n !== 'number' || n <= 0) { return ''; }
     if (n === 1) {
-      return "The room shows pictures and writing, not video yet — so 1 video stayed in Photos, right where it is.";
+      return "The room shows pictures and writing, not video yet, so 1 video stayed in Photos, right where it is.";
     }
-    return "The room shows pictures and writing, not video yet — so " + n + " videos stayed in Photos, right where they are.";
+    return "The room shows pictures and writing, not video yet, so " + n + " videos stayed in Photos, right where they are.";
   }
 
   // 26.65-09: pictures that were made smaller so they would fit. Her ruling
@@ -25665,9 +25820,9 @@
     var n = expReport.resized;
     if (typeof n !== 'number' || n <= 0) { return ''; }
     if (n === 1) {
-      return 'The room keeps pictures small enough to open quickly — so 1 picture was made smaller on the way in. Nothing else was changed.';
+      return 'The room keeps pictures small enough to open quickly, so 1 picture was made smaller on the way in. Nothing else was changed.';
     }
-    return 'The room keeps pictures small enough to open quickly — so ' + n + ' pictures were made smaller on the way in. Nothing else was changed.';
+    return 'The room keeps pictures small enough to open quickly, so ' + n + ' pictures were made smaller on the way in. Nothing else was changed.';
   }
 
   // Paint that one line ABOVE the shipped import report, without touching
@@ -25725,6 +25880,10 @@
       if (!adapterHostLive()) { return; }
       if (!ares.ok || !ares.data) { armAdapterReread(box, misses + 1); return; }
       var exp = ares.data;
+      if (exp.state === 'stopped') {
+        freeCollectAfterStop(box);
+        return;
+      }
       if (exp.state === 'error') {
         reenableNotes();
         renderAdapterError(box, adapterErrorCopy(exp.message));
@@ -25735,6 +25894,10 @@
       apiGet('/api/import-progress').then(function (ires) {
         if (!adapterHostLive()) { return; }
         var imp = (ires.ok && ires.data) ? ires.data : null;
+        if (imp && imp.state === 'stopped') {
+          freeCollectAfterStop(box);
+          return;
+        }
         if (exp.state === 'done') {
           // Both phases finished server-side; hand to the shipped import
           // report (ONB active -> Step inside routes to #screen-expect).
@@ -25779,7 +25942,11 @@
         }
         if (imp && imp.state === 'running') {
           // copy phase: the shipped readout verbatim (law 6).
-          renderImportProgress(box, imp);
+          // W-1 N binds to export attempted when the report has landed.
+          if (exp.report && typeof exp.report.attempted === 'number') {
+            REPULL.longWaitAttempted = exp.report.attempted;
+          }
+          renderImportProgress(box, imp, true);
           if (ACTIVE_ADAPTER.room) { repullQuicken(); }
           armAdapterReread(box, 0);
           return;
@@ -25804,7 +25971,7 @@
     // one-shot, armed here and never repeating on its own.
     if (misses >= 3) {
       reenableNotes();
-      renderAdapterError(box, 'The room could not be heard from just now — ' +
+      renderAdapterError(box, 'The room could not be heard from just now. ' +
         'nothing was lost.');
       return;
     }
@@ -25861,7 +26028,7 @@
   // run facts it belongs to.
   var REPULL = { busy: false, pendingSource: false, queue: [], excludes: {},
     brought: 0, onDone: null, holding: null, refused: null, trouble: null,
-    candleAsked: false };
+    candleAsked: false, longWaitAttempted: 0 };
 
   // ---- the visit's gathering (26.995, HER RULING of 2026-08-23) ------------
   //
@@ -26036,6 +26203,7 @@
       // 2026-08-25: and so does her mid-collect candle answer — a note about
       // a tap she made during a PREVIOUS run must not ride this one.
       REPULL.candleAsked = false;
+      REPULL.longWaitAttempted = 0;
       // 26.995-21: and so does a held reading-failure sentence. Cleared at
       // the start of every run for the same reason the refusal is — a run
       // that ended in an error never reached the ending that consumes it,
@@ -26501,7 +26669,7 @@
 
   // The one static plain-words failure line (SC-1) — ONE source literal
   // so the byte-pin holds; fix the source, never the gate.
-  var SESSION_STATIC_LINE = 'the librarian could not finish just now — nothing is lost; the desk is as it was.';
+  var SESSION_STATIC_LINE = 'the librarian could not finish just now. nothing is lost; the desk is as it was.';
 
   // The held-draft offer line (26.7-05, D-03) — ONE source literal,
   // byte-pinned; the knock names that a conversation waits, never its
@@ -26670,11 +26838,11 @@
   var SESSION_WAIT_LEAVE_LINE = 'this one is taking a while.';
   // at twenty seconds — the permission, and the one that matters most: it
   // is what says the room is not holding her hostage
-  var SESSION_WAIT_PERMISSION_LINE = 'leave it for now — whatever arrives will still be here.';
+  var SESSION_WAIT_PERMISSION_LINE = 'leave it for now. whatever arrives will still be here.';
   var HER_RULED_WAIT_LINES = [
     'still reading.',
     'this one is taking a while.',
-    'leave it for now — whatever arrives will still be here.'
+    'leave it for now. whatever arrives will still be here.'
   ];
 
   var SESSION_BOUND_MS = 45000;
@@ -26684,7 +26852,7 @@
   // The one bound-expiry line — ONE source literal so the byte-pin holds.
   // ⛔ THIS SENTENCE IS TRUE ONLY WHERE THE LIBRARIAN WAS ACTUALLY ASKED.
   // sessionTimedOut routes the card-waiting case away from it entirely.
-  var SESSION_BOUND_LINE = 'the librarian let this one go — it was taking too long. nothing is lost; whatever arrived is still here.';
+  var SESSION_BOUND_LINE = 'the librarian let this one go; it was taking too long. nothing is lost; whatever arrived is still here.';
 
   // ⛔⛔ HER SENTENCE FOR THE OTHER ROUTE — THE ONE WHERE THE ROOM WAS
   // WAITING FOR HER. IT IS HERS. NO AGENT MAY EDIT, SMOOTH OR REPLACE IT.
@@ -26737,7 +26905,7 @@
   //
   // ⚠ THE DASH IN THE MIDDLE IS AN EM DASH, NOT A HYPHEN. Do not smooth
   // it, sentence-case the line, or trim it.
-  var SESSION_WALK_WAITED_LINE = 'no reflection tonight — but everything you welcome here is still kept.';
+  var SESSION_WALK_WAITED_LINE = 'no reflection tonight, but everything you welcome here is still kept.';
 
   // ⛔⛔ HER SENTENCE FOR A CANDLE TAP DURING A COLLECT — 2026-08-25, AND THE
   // BEHAVIOUR IS HER RULING TOO. Her words, volunteered at 04:03 from live
@@ -26756,7 +26924,7 @@
   // ⚠ THE DASH IS AN EM DASH AND THE LOWERCASE IS HERS. Do not smooth it,
   // sentence-case it, or trim it. Pinned by value in
   // tests/test_session_flow.cjs beside the other ruled lines.
-  var SESSION_COLLECT_BUSY_LINE = "the librarian is here — the room is still collecting. the candle lights when it's done.";
+  var SESSION_COLLECT_BUSY_LINE = "the librarian is here. the room is still collecting. the candle lights when it's done.";
 
   // ⛔⛔ HER WORDS FOR THE TIME-FRAME CONTROL — 26.998-04, § E of
   // .planning/phases/26.998-what-weighs-in-a-reflection/26.998-COPY.md.
@@ -26778,9 +26946,9 @@
   var SESSION_REACH_ASK = 'shall i stay recent, or go further back?';
   var SESSION_REACH_TYPE = 'tell me how far back to go.';
   var SESSION_REACH_UNREADABLE =
-    "i can't read that as a length — try months or years.";
+    "i can't read that as a length. try months or years.";
   var SESSION_REACH_SET_ASIDE =
-    'some things here have no date i can trust — i left those out.';
+    'some things here have no date i can trust; i left those out.';
   // ⛔⛔ HER TWO RANKING SENTENCES — § G of 26.998-COPY.md, recorded
   // 2026-08-23 and COMMITTED BEFORE THIS CODE EXISTED (`5a21207`, whose own
   // message is "her two ranking sentences, recorded BEFORE any code moves").
@@ -26803,9 +26971,9 @@
   // her line does not tell her WHAT was lost. That is her ruling and not a
   // defect: no agent may "complete" it by appending the missing half.
   var SESSION_RANKING_HELD_BACK =
-    "there was more than i could hold — i kept what's yours.";
+    "there was more than i could hold; i kept what's yours.";
   var SESSION_RANKING_NONE_OF_HERS =
-    'nothing of your own writing came in this time — this is built from what you saved.';
+    'nothing of your own writing came in this time; this is built from what you saved.';
   // ⛔⛔ § H OF 26.998-COPY.md, HER 2026-08-24 CHOICE, COMMITTED BEFORE THIS
   // CODE EXISTED. ⚠ AN AGENT'S WORDING, CHOSEN BY HER — she was offered
   // writing it herself (first, and recommended), silence, or two composed
@@ -26883,7 +27051,7 @@
   // an apostrophe — split across a `+` the byte-pin cannot see it, which the
   // driven gate caught on the first try.
   var SESSION_OPENING_WAITED_LINE =
-    "i was still looking through what's new when time ran out — nothing is lost.";
+    "i was still looking through what's new when time ran out. nothing is lost.";
 
   // ⛔ THE ONLY READER OF WHAT SHE TYPES. It converts HER OWN words into a
   // reach and invents nothing: an empty box, a bare number with no unit, or
@@ -27240,6 +27408,7 @@
     if (!SESSION.busy || SESSION.walkDone || SESSION.view !== 'walk') {
       return;
     }
+    if (REPULL.busy) { return; }
     // 26.8-02: the why step starts each pass clean — no held or resolved
     // id carries over from an earlier sitting.
     WHY.heldId = null;
@@ -27314,12 +27483,19 @@
     // The begin button opens the Offer; the underlined door resolves the
     // stage without opening anything, and walking on stays one tap away
     // and costs nothing (D-13's silent answer).
+    //
+    // ⛔ HER RULING 2026-08-21: Don't show it. While a photo fetch holds the
+    // door (REPULL.busy — the same in-flight collect fact the candle busy
+    // note uses), look-through-them cannot start work, so it is not drawn.
+    // The quiet skip still resolves the latch without a fetch. No new copy.
+    var beginMarkup = REPULL.busy ? '' :
+      '<button type="button" class="btn session-walk-begin">' +
+      escapeHtml('look through them') + '</button> ';
     spot.innerHTML = '<p class="session-warm">' +
       escapeHtml(OFFER_COPY.walkBookend) +
       '</p>' +
       '<p class="session-walk-doors">' +
-      '<button type="button" class="btn session-walk-begin">' +
-      escapeHtml('look through them') + '</button> ' +
+      beginMarkup +
       '<button type="button" class="session-walk-skip" ' +
       'style="background:none;border:none;color:var(--ink-soft);' +
       'cursor:pointer;font:inherit;text-decoration:underline">' +
@@ -27449,7 +27625,7 @@
 
   // 26.99-10 (D-04): THE ONE PLACE THE ROOM SAYS A DOLLAR FIGURE, and it
   // is said ONCE, immediately before the expensive action — the sitting's
-  // consent block, one paragraph above "yes — read what's new". Tokens
+  // consent block, one paragraph above "yes: read what's new". Tokens
   // everywhere else; this is the only money in the room.
   //
   // ⚠ THE SENTENCE ARRIVES FINISHED, WITH THE FIGURE ALREADY IN HER SLOT.
@@ -28297,7 +28473,7 @@
     }
     if (SESSION.view === 'nothing') {
       spot.innerHTML = '<p class="session-warm">' +
-        escapeHtml('the library is settled — nothing waiting today.') +
+        escapeHtml('the library is settled. nothing waiting today.') +
         '</p>';
       return;
     }
@@ -28476,9 +28652,9 @@
   var ASK_SEND_COPY = 'ask';
   var ASK_CANCEL_COPY = 'never mind';
   var ASK_THINKING_COPY = 'a quick look…';
-  var ASK_FAIL_COPY = "couldn't ask just now — try again.";
+  var ASK_FAIL_COPY = "couldn't ask just now. try again.";
   var ASK_DECLINE_COPY = 'not now';
-  var ASK_DONE_PREFIX = 'done — ';
+  var ASK_DONE_PREFIX = 'done. ';
   // ---- 26.91 D-07/D-08: the librarian's proposing reply ------------------
   //
   // 26.91-04 retired the reading book, the last surface that rendered the
@@ -28663,7 +28839,7 @@
     manage_only: "i can't change that one from here.",
     not_a_capability: "that's past what i can change. something like an ai coding assistant in your terminal could build it, if that's a door you like opening.",
     unmapped: "i didn't follow that one. say it another way and i'll try again.",
-    too_many: "that's more than one decision at once — “manage your library” in the room can change them together."
+    too_many: "that's more than one decision at once. “manage your library” in the room can change them together."
   };
 
   // THE EFFECTIVE-STATE MAPPER — the card's ONLY source of change-line copy.
@@ -28672,18 +28848,18 @@
   // shipped manage copy, reused byte-exactly (the two tidy-up rows point at
   // the shipped constants themselves so they cannot drift); the mapper is a
   // lookup over existing copy, not a new voice.
-  var ASK_SYNC_ON_COPY = 'this is on — an eligible note you leave is added to its vault file.';
-  var ASK_SYNC_OFF_COPY = 'this is off — your notes stay in the room and touch no vault file.';
-  var ASK_REFLECT_ON_COPY = 'this is on — a reflection you keep is also written into your vault as one new note.';
-  var ASK_REFLECT_OFF_COPY = 'this is off — a kept reflection stays in the room and touches no vault file.';
+  var ASK_SYNC_ON_COPY = 'this is on: an eligible note you leave is added to its vault file.';
+  var ASK_SYNC_OFF_COPY = 'this is off: your notes stay in the room and touch no vault file.';
+  var ASK_REFLECT_ON_COPY = 'this is on: a reflection you keep is also written into your vault as one new note.';
+  var ASK_REFLECT_OFF_COPY = 'this is off: a kept reflection stays in the room and touches no vault file.';
   var ASK_STATE_COPY = {
     consolidation: {
       on: 'photos gather into an album.',
       off: 'photos and notes stay in the pile and shelf only.'
     },
     librarian_enabled: {
-      on: 'the librarian is in — it suggests, you decide.',
-      off: 'the librarian is off — the room is fully yours alone.'
+      on: 'the librarian is in: it suggests, you decide.',
+      off: 'the librarian is off: the room is fully yours alone.'
     },
     cleaning_enabled: { on: CLEAN_ON_COPY, off: CLEAN_OFF_COPY },
     sync_comments_enabled: { on: ASK_SYNC_ON_COPY, off: ASK_SYNC_OFF_COPY },
@@ -28698,8 +28874,8 @@
     // key: the card renders its state from this device's own storage
     // (displayFenceOpen), never from meta — see askBefore / askReceiptLine.
     display_fence_open: {
-      on: 'this is on — a private note named in a reflection becomes a door you can open, just to read, on this device only.',
-      off: 'this is off — a private note named in a reflection stays plain words, and nothing opens.'
+      on: 'this is on: a private note named in a reflection becomes a door you can open, just to read, on this device only.',
+      off: 'this is off: a private note named in a reflection stays plain words, and nothing opens.'
     }
   };
   // 26.87 UAT F4 — WHAT "THIS" IS.
@@ -28707,7 +28883,7 @@
   // The state sentences above are shipped Manage copy and they are correct
   // THERE, because in Manage each one sits directly beneath its own labelled
   // toggle: "this" has a referent one line above it. Lifted onto the ask
-  // card, that referent VANISHES — the card renders "this is off — nothing in
+  // card, that referent VANISHES — the card renders "this is off: nothing in
   // your vault changes" with nothing anywhere saying which switch moved. The
   // defect was never the sentence; it was reusing copy whose subject came
   // from its surroundings, in a surface that does not supply them.
@@ -28754,7 +28930,7 @@
   // because it is the one grant that reaches inside a file she wrote.
   var ASK_REACH_COPY = {
     librarian_enabled: 'the librarian read the parts of your library you allowed',
-    cleaning_enabled: 'the tidy-up lay out your own notes, in the files themselves — you see every change before it lands',
+    cleaning_enabled: 'the tidy-up lay out your own notes, in the files themselves. you see every change before it lands',
     sync_comments_enabled: 'a note you leave here be added to its vault file',
     reflection_writeback_enabled: 'a reflection you keep be written into your vault as one new note'
   };
@@ -28867,7 +29043,7 @@
   // brought-in-once sources, so the card and the pane can no longer drift
   // apart. The rest are new, and each is one string on one source line so a
   // byte pin can hold.
-  var ASK_SOURCE_BROUGHT_IN = ' — brought in.';
+  var ASK_SOURCE_BROUGHT_IN = ': brought in.';
   var ASK_SOURCE_STOPS = ' stops bringing anything in.';
   var ASK_NAME_SET_HEAD = 'the librarian answers to ';
   var ASK_NAME_SET_TAIL = '.';
@@ -28927,7 +29103,7 @@
   // elsewhere in this file, for the same reason its add-side twin is:
   // a concatenation across two lines silently defeats a lift-and-compare.
   // eslint-disable-next-line max-len
-  var ROSTER_REMOVE_FUTURE_ONLY = 'No longer private from now on — anything already here from that folder stays where it is.';
+  var ROSTER_REMOVE_FUTURE_ONLY = 'No longer private from now on. Anything already here from that folder stays where it is.';
 
   // A long folder name, librarian name or filter label truncates on ONE
   // line rather than wrapping the acts row off the card. The value is
@@ -28955,8 +29131,8 @@
     filters: [],
     dismissed: false   // her tap on either door retires it for this visit
   };
-  var ASK_D04_HEAD = 'a filter you set — ';
-  var ASK_D04_TAIL = ' — is hiding some of what you welcomed. want it off?';
+  var ASK_D04_HEAD = 'a filter you set, ';
+  var ASK_D04_TAIL = ', is hiding some of what you welcomed. want it off?';
 
   function askEffectiveOn(meta, key) {
     // THE EFFECTIVE READER, per key, in the shipped direction — never a
@@ -30051,7 +30227,7 @@
       (sessionConsentCardShowing() ?
         '<div class="session-consent">' +
         '<p>' + escapeHtml("the librarian reads what's newly arrived + your comments to shape one reflection.") + '</p>' +
-        '<p>' + escapeHtml('unreviewed new arrivals are sent to Claude only with your yes — never-show, retired, and trigger-marked things stay on this machine.') + '</p>' +
+        '<p>' + escapeHtml('unreviewed new arrivals are sent to Claude only with your yes. never-show, retired, and trigger-marked things stay on this machine.') + '</p>' +
         forecastLineHtml() +
         // 26.995-22 (gap G-26.995-2): the three controls carry their own
         // class so the rule that keeps them ON SCREEN can name them
@@ -30061,7 +30237,7 @@
         '<button type="button" class="btn session-consent-meta">' +
         'just titles and dates</button> ' +
         '<button type="button" class="btn session-consent-full">' +
-        escapeHtml("yes — read what's new") + '</button> ' +
+        escapeHtml("yes: read what's new") + '</button> ' +
         '<button type="button" class="btn session-consent-later">' +
         'not now</button></p></div>' : '') +
       (sessionReachShowing() ?
@@ -30851,10 +31027,13 @@
     card.appendChild(line);
     var doors = document.createElement('p');
     doors.className = 'session-walk-doors';
-    var begin = document.createElement('button');
-    begin.type = 'button';
-    begin.className = 'btn session-walk-begin';
-    begin.textContent = 'look through them';
+    var begin = null;
+    if (!REPULL.busy) {
+      begin = document.createElement('button');
+      begin.type = 'button';
+      begin.className = 'btn session-walk-begin';
+      begin.textContent = 'look through them';
+    }
     var skip = document.createElement('button');
     skip.type = 'button';
     skip.className = 'session-walk-skip';
@@ -30865,14 +31044,17 @@
     skip.style.cursor = 'pointer';
     skip.style.font = 'inherit';
     skip.style.textDecoration = 'underline';
-    doors.appendChild(begin);
-    doors.appendChild(document.createTextNode(' '));
+    if (begin) {
+      doors.appendChild(begin);
+      doors.appendChild(document.createTextNode(' '));
+    }
     doors.appendChild(skip);
     card.appendChild(doors);
     function away() {
       if (card.parentNode) { card.parentNode.removeChild(card); }
     }
-    begin.addEventListener('click', function () {
+    if (begin) {
+      begin.addEventListener('click', function () {
       begin.disabled = true;
       skip.disabled = true;
       begin.style.opacity = '0.6';
@@ -30889,6 +31071,7 @@
       // re-paints the spot — which wipes the card with everything else on
       // it. Nothing here polls, repeats, or re-arms.
     });
+    }
     skip.addEventListener('click', away);
     spot.appendChild(card);
   }
@@ -31026,7 +31209,7 @@
     box.innerHTML =
       '<p>' + escapeHtml('macOS will ask ') +
       '<strong>' + escapeHtml('once') + '</strong>' +
-      escapeHtml(' to let the room reach your Notes — say OK. The room only ever reads; it never changes a thing.') +
+      escapeHtml(' to let the room reach your Notes, say OK. The room only ever reads; it never changes a thing.') +
       '</p>' +
       '<p class="onb-adapter-checking">' + escapeHtml('checking…') + '</p>';
     // The picker REMEMBERS: previously kept-out folders render unchecked
@@ -31051,8 +31234,8 @@
         itemsRes.data.meta.notes_excluded_folders : [];
       box.innerHTML =
         '<div class="card">' +
-        '<p>' + escapeHtml("Some notes carry private things right in the title. Until you bless a note, the room keeps its title out of the librarian's reach — nothing here is read by the librarian before you say so.") + '</p>' +
-        '<p>' + escapeHtml('Keep any Notes folder out of the room — pick the ones to skip.') + '</p>' +
+        '<p>' + escapeHtml("Some notes carry private things right in the title. Until you bless a note, the room keeps its title out of the librarian's reach. Nothing here is read by the librarian before you say so.") + '</p>' +
+        '<p>' + escapeHtml('Keep any Notes folder out of the room: pick the ones to skip.') + '</p>' +
         folders.map(function (name) {
           var checked = kept.indexOf(name) === -1 ? 'checked ' : '';
           return '<label style="display:block;margin:0.2em 0">' +
@@ -31077,7 +31260,7 @@
       }
     }).catch(function () {
       renderNotesPickerError(box, 'The room could not be reached, so ' +
-        'nothing was brought in — is the server still running in your ' +
+        'nothing was brought in. is the server still running in your ' +
         'terminal?');
     });
   }
@@ -31125,10 +31308,10 @@
 
   // Her words, byte-identical to the recorded rows C5 / C6 / C7 / C14.
   // ⚠ C7 carries NO terminal punctuation and ships exactly as written.
-  var VAULT_PICKER_FRAMING = 'Choose what comes in. The folders you keep private are already unticked — untick any others you\'d rather leave out.';
+  var VAULT_PICKER_FRAMING = 'Choose what comes in. The folders you keep private are already unticked; untick any others you\'d rather leave out.';
   var VAULT_PICKER_INSTRUCTION = 'Untick anything you\'d rather leave out.';
   var VAULT_PICKER_CONFIRM = 'bring these in';
-  var VAULT_PICKER_UNREACHABLE = 'Couldn\'t reach your vault just now — nothing was lost. Try again in a moment.';
+  var VAULT_PICKER_UNREACHABLE = 'Couldn\'t reach your vault just now. Nothing was lost. Try again in a moment.';
   // The shipped roster-empty line, REUSED rather than re-written: a vault
   // with no top-level folders falls to the shape the fence screen already
   // ships (UI-SPEC S2 empty), and the confirm control still renders.
@@ -31143,7 +31326,7 @@
   // register stops being trustworthy.
   // ⚠ She took this candidate over two shorter ones BECAUSE of its second
   // half: it says what the button below it will do.
-  var VAULT_PICKER_EMPTY = 'No folders to choose from — everything in your vault will come in.';
+  var VAULT_PICKER_EMPTY = 'No folders to choose from; everything in your vault will come in.';
 
   // The seed, spelled once. Each row is {name, value, kept, toggleable}.
   //
@@ -31335,7 +31518,7 @@
       // renderDeskStation (d)).
       '<p>' + escapeHtml('When you\'re ready, the desk holds a first look ' +
         'through your things. The shelf fills from what you keep.') + '</p>' +
-      '<p>' + escapeHtml(candle + ' is how you ask — tap it whenever you\'d ' +
+      '<p>' + escapeHtml(candle + ' is how you ask. Tap it whenever you\'d ' +
         'like and it will look through what you\'ve brought in. It won\'t ' +
         'ask you for anything. Come back whenever you like.') + '</p>' +
       '<p><button id="btn-onb-enter" class="btn" type="button">' +
@@ -31366,6 +31549,7 @@
         APP.libraryRoot = res.data.library_root;
         APP.releaseDate = res.data.release_date || null;
         applyWhatsNewFromStatus(res.data);
+        applySurveyPosterFromStatus(res.data);
         $('library-path-input').value = res.data.library_root;
         if (res.data.items >= 1) {
           // The populated-return path: the room already holds things, so

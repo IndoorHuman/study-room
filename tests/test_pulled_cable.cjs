@@ -28,7 +28,7 @@
  * MEASURED, NOT ASSUMED: with this harness running, GET /api/librarian/status
  * answers {"available":true,"auth":"api-key"}. THE LIBRARIAN IS REACHABLE AND
  * A REAL CREDENTIAL IS IN SCOPE. Answering the consent card — `just titles and
- * dates` or `yes — read what's new` — WOULD SPEND HER MONEY, on every run of
+ * dates` or `yes: read what's new` — WOULD SPEND HER MONEY, on every run of
  * this suite, forever.
  *
  * ⛔ SO THE CABLE IS PULLED **BEFORE** THE CONSENT CARD IS EVER ANSWERED, and

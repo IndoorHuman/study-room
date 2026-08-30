@@ -382,7 +382,7 @@ if (!/box\.innerHTML = '';/.test(finishRepull)) {
 
 // ---- 5. MANAGE ROWS ---------------------------------------------------------
 
-['No apps connected yet — connect Apple Notes or Apple Photos below.',
+['No apps connected yet. Connect Apple Notes or Apple Photos below.',
   ' — brought in.', 'connected apps'
 ].forEach(function (copy) { must(copy, 'manage-rows'); });
 
