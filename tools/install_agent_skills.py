@@ -57,7 +57,7 @@ def install_all(source: Path, *, dry_run: bool = False) -> int:
     skills = bundled_skills(source)
     if not skills:
         print(
-            "INSTALL REFUSED — no skills/ with SKILL.md under: %s" % source,
+            "INSTALL REFUSED: no skills/ with SKILL.md under: %s" % source,
             file=sys.stderr,
         )
         return 1

@@ -353,8 +353,33 @@ SUGGESTIONS_NAME = "suggestions.json"
 # delta from the last ledger is named above suite by suite so the miss stays
 # visible, and the arithmetic below still has to close over this phase's own
 # single addition.
-PYTHON_BASELINE_AT_PHASE_START = 48
-NODE_BASELINE_AT_PHASE_START = 65
+# ---- REBASELINED FOR 26.9997 (plan 01, Wave 0), on the same precedent -----
+#
+# MEASURED AT THE PRE-PHASE HEAD (add07a5), NOT COPIED FROM A DOCUMENT: there
+# `ls tests/test_*.py | wc -l` read 66 and `ls tests/*.cjs | wc -l` read 77.
+# The pins below them at that HEAD read 60 / 74, so the ledger had drifted by
+# +6 python and +3 node since the last commit that moved them (058657f, the
+# bundled-skill install, 2026-08-28). That drift is RECORDED here, not quietly
+# reconciled, every file attributed by its adding commit:
+#   python +6 (net) - seven suites landed after 26.9996-01's twin-move
+#     (7be0e52) without a row of their own: test_update_behind_prompt.py
+#     (26.9996-08, 06aab35); test_update_room.py (26.9996-09, 7d004be);
+#     test_heavy_record_durability.py (26.996-07, c6d0d21);
+#     test_likeness_finder.py (26.996-07, faeaa46); test_aside_desk.py
+#     (26.996-10, e360929); test_stop_a_collect.py (26.997, fb1c255);
+#     test_demo_store.py (27-02, 56eb7a2). Seven files, net six, because
+#     26.9996-01's own move stated 59 while the glob read 58 at that commit:
+#     one 26.9996 instrument was pinned a plan ahead of its landing.
+#   node +3 - test_pipeline_verbatim.cjs (27-01, 0526578);
+#     test_stats_exposure.cjs (27-03, 4b88d72); test_survey_wall_invite.cjs
+#     (the 2026-08-30 em-dash re-ruling, 75abd26). NODE_SUITES in
+#     test_live_render.cjs read 74 too (moved at bf52521), so both node pins
+#     lagged the glob by the same three.
+# Where the last phases closed, one line each, so the arc stays legible:
+# 26.99955 closed at 48 python / 66 node; 26.9996 / 26.997 / 27 (concurrent)
+# left the pins at 60 / 74 against a glob of 66 / 77.
+PYTHON_BASELINE_AT_PHASE_START = 66
+NODE_BASELINE_AT_PHASE_START = 77
 
 # ---- 26.99955'S DECLARED ARITHMETIC ----------------------------------------
 #
@@ -412,17 +437,17 @@ NODE_BASELINE_AT_PHASE_START = 65
 #    re-layout of the Manage screen over the untouched pane registry; it adds
 #    no python suite and deletes none. A lowering is the dangerous direction
 #    and this phase does not take it.")
+# 26.9997-01 (Wave 0): THREE python instruments, named here in the SAME
+# COMMIT that adds them, each red at that commit because the product code it
+# describes lands in plans 02-04 (Nyquist: instruments before features).
+# The rows the earlier phases carried (test_voice_pick_reaches_the_call.py
+# and test_stop_a_sort.py for 26.99955, test_stop_a_collect.py for 26.997,
+# test_install_agent_skills.py for 26.9996) are inside the measured baseline
+# above and are not repeated, on the rebaseline precedent this file records.
 PYTHON_ADDED_THIS_PHASE = (
-    ("test_voice_pick_reaches_the_call.py", "26.99955-UAT G-…-04"),
-    # ⭐ 2026-08-27: the second one, and for the same reason as the first —
-    # the walk-through's remaining defect is a SERVER claim, not a surface
-    # one. A running sort could not be stopped from inside the room at all,
-    # so the gate has to drive the worker's own loop.
-    ("test_stop_a_sort.py", "26.99955-UAT G-…-05"),
-    # 26.997 owner ask: running collect/import stoppable so librarian is free.
-    ("test_stop_a_collect.py", "26.997 stop-import"),
-    # 26.9996 bundled agent skills installer.
-    ("test_install_agent_skills.py", "26.9996 bundled skills install"),
+    ("test_update_consent.py", "26.9997-01"),
+    ("test_update_check.py", "26.9997-01"),
+    ("test_update_install.py", "26.9997-01"),
 )
 # ⛔ A lowering is still the dangerous direction and this phase still does not
 # take one.
@@ -434,9 +459,11 @@ PYTHON_REMOVED_THIS_PHASE = ()
 # the Nth `.cjs` and leaves the other constant behind ships a permanently
 # unmeetable gate. That is exactly the breach the drift table above records
 # sixteen instances of, so the rule is not hypothetical here.
+# 26.9997-01 (Wave 0): ONE node instrument, named in the SAME COMMIT that adds
+# it and that moves `NODE_SUITES` in `tests/test_live_render.cjs` 74 -> 78
+# (the twin-move rule above). 26.99955's two rows are inside the baseline.
 NODE_ADDED_THIS_PHASE = (
-    ("test_manage_landing.cjs", "26.99955-01"),
-    ("test_uat_fixes_26_99955.cjs", "26.99955-UAT G-…-01/06/08"),
+    ("test_update_button.cjs", "26.9997-01"),
 )
 NODE_REMOVED_THIS_PHASE = ()
 
@@ -444,8 +471,13 @@ NODE_REMOVED_THIS_PHASE = ()
 # node suite (UPD-01..08/10 instruments). Prior pin lagged disk (50/67 vs
 # 52/70); this commit sets BOTH pins BY VALUE to disk, same commit as
 # NODE_SUITES in test_live_render.cjs (26.99955 drift lesson).
-EXPECTED_PYTHON_SUITES = 60     # was 59; +1 for test_install_agent_skills.py
-EXPECTED_NODE_SUITES = 74       # measured: ls tests/*.cjs | wc -l
+# 26.9997-01 Wave 0 twin-move: MEASURED after adding the three python suites
+# and the one node suite named above: `ls tests/test_*.py | wc -l` = 69,
+# `ls tests/*.cjs | wc -l` = 78. The arithmetic (66 + 3, 77 + 1) is the check
+# on the reasoning, never the source of the number. Both node pins moved in
+# this one commit; the inherited drift is attributed above by file and commit.
+EXPECTED_PYTHON_SUITES = 69     # measured: ls tests/test_*.py | wc -l
+EXPECTED_NODE_SUITES = 78       # measured: ls tests/*.cjs | wc -l
 # ⚠⚠ THESE TWO MOVED BY EXACTLY WHAT THIS WORK ADDED, AND BY NOT ONE MORE —
 # +1 python and +1 node, each named in the tuples above. ⛔ THE GATE IS STILL
 # RED, AND THAT IS DELIBERATE: measured at HEAD `aef7f24` with this work
@@ -588,6 +620,11 @@ STAND_IN = {
     # denied" is actually measured.
     VISION_PROGRAM:
         "// a stand-in body: present, and carrying nothing denied.\n",
+    # 26.9997-05: the update helper joined REQUIRED (the in-app install execs
+    # it from the live folder). Same contract as the others: presence here,
+    # real bytes through `real_contents()`.
+    "tools/update_room.py":
+        "# a stand-in body: present, and carrying nothing denied.\n",
 }
 
 PLANT_TARGET = "app.js"     # a text suffix, so the gate actually reads it
@@ -1068,16 +1105,20 @@ class PublishGateCase(unittest.TestCase):
         # ONLY path to a model is named as something it cannot work without.
         self.assertIn("librarian_call.py", stage_public.REQUIRED)
 
-    def test_the_required_list_is_exactly_the_seven_load_bearing_files(self):
+    def test_the_required_list_is_exactly_the_eight_load_bearing_files(self):
         # BY VALUE, and as a set so ordering is not asserted by accident.
         # Widening this list is a promise; it should show up in a diff.
         # ⚠ SIX UNTIL 26.94-10, SEVEN AFTER IT: the Vision program joined,
         # and the delta is named here rather than left for a reader to date
         # from a git blame.
+        # ⚠ EIGHT AFTER 26.9997-05: tools/update_room.py joined, because the
+        # in-app install (26.9997) execs that file from the live folder; a
+        # staged snapshot without it cannot update itself.
         self.assertEqual(
             sorted(stage_public.REQUIRED),
             sorted(["librarian_call.py", "server.py", "study_lib.py",
-                    "app.js", "core.js", "index.html", VISION_PROGRAM]))
+                    "app.js", "core.js", "index.html", VISION_PROGRAM,
+                    "tools/update_room.py"]))
         for rel in stage_public.REQUIRED:
             self.assertTrue((pathlib.Path(REPO_ROOT) / rel).is_file(),
                             "REQUIRED names a file that is not in the repo: "

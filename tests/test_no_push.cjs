@@ -68,19 +68,16 @@ const FORBIDDEN_TOKENS = [
   { name: 'sched', re: /sched/i },
   { name: 'cron', re: /cron/i },
   { name: 'reminder', re: /reminder/i },
-  { name: 'osascript', re: /osascript/i },
-  // UPD-09 / map #141 #143 (D-01/D-02): room never phones home for updates
-  // and never ships a built-in updater. Fix the source if these trip —
-  // never weaken the gate. Tokens name mechanisms, not owner UI copy.
-  { name: 'check for updates', re: /check\s+for\s+updates?/i },
-  { name: 'checkForUpdates', re: /checkforupdates/i },
-  { name: 'auto-update', re: /auto[-\s]?update/i },
-  { name: 'autoUpdater', re: /autoupdater/i },
-  { name: 'electron-updater', re: /electron[-\s]?updater/i },
-  { name: 'GitHub Releases API',
-    re: /api\.github\.com\/repos\/[^/\s]+\/[^/\s]+\/releases/i },
-  { name: 'downloadUpdate', re: /downloadupdate/i },
-  { name: 'updateAvailable', re: /updateavailable/i }
+  { name: 'osascript', re: /osascript/i }
+  // The UPD-09 block that stood here (26.9996-01: check-for-updates,
+  // checkForUpdates, auto-update, autoUpdater, electron-updater, the GitHub
+  // Releases URL, downloadUpdate, updateAvailable) was RETIRED by 26.9997-01
+  // per ticket #183, which reverses #141 rulings 1 and 2: the room now asks
+  // GitHub once a day, with consent, and installs on their tap (D-01..D-06).
+  // Every pull-only token above it stays: no timer, no sched, no cron, no
+  // reminder, no notification. D-04 (no background timer, ever) is enforced
+  // by the setInterval entry, which tests/test_update_button.cjs reads from
+  // this list by name rather than retyping.
 ];
 
 const SEAM_RE = /\b(?:renderMarkdown|escapeHtml|escapeAttr)\s*\(/;
@@ -996,7 +993,12 @@ function orderCheck(file, src, earlier, later, why) {
 // prose; never the shape.
   // 26.996-07: +1 spawned site — run_likeness_pass beside run_vision_pass.
   // 26.996-07 task 3: +1 — run_place_pass beside run_likeness_pass.
-  const SERVER_SUBPROCESS_SITES = 3;
+  // 26.9997-04: +1 — the Windows branch of hand_off_to_update_helper starts
+  // the swap helper detached (#183 reverses #141; D-13). The Mac/Linux
+  // branch execs in place and adds no site. The route builds the argv only
+  // after stamp, consent, behind, no-running-job and the stamp-match verify
+  // all hold; tests/test_update_install.py pins every refusal and the argv.
+  const SERVER_SUBPROCESS_SITES = 4;
 
 // The three request builders, one per provider. Each must carry the payload
 // verbatim and place the job row's prompt as an explicit field.

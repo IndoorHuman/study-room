@@ -4651,7 +4651,7 @@ group('routeTemplateBytes (the helper rebuilds BOTH shipped route lines ' +
       'not defined in app.js, so no shipped route line can be rebuilt from ' +
       'the pane registry and the roster entry could only be a literal. ⚠ The ' +
       'route table\'s own comment already claims its strings are the ' +
-      'MANAGE_PANES labels "reused byte-exactly" — nothing in the file reads ' +
+      'MANAGE_PANES labels "reused byte-exactly". nothing in the file reads ' +
       'the registry, so that claim is false today and this wave makes it true.');
     return;
   }

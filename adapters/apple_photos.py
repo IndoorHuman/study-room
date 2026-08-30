@@ -205,7 +205,7 @@ _EXPORT_ROOT_DIRNAME = "StudyRoom-import"
 TOTAL_FAILURE_TOKEN = "none of your photos came back"
 
 _TOTAL_FAILURE_MSG = (
-    "The Photos app answered, but " + TOTAL_FAILURE_TOKEN + " — nothing in "
+    "The Photos app answered, but " + TOTAL_FAILURE_TOKEN + ". Nothing in "
     "your room was changed. Nothing was lost; you can try the candle again.")
 
 
@@ -539,7 +539,7 @@ def _run_osascript(script, *args):
             "reach Photos.", fatal=True) from e
     except subprocess.TimeoutExpired as e:
         raise PhotosCollectError(
-            "Reaching Photos took too long — try the candle again.",
+            "Reaching Photos took too long. Try the candle again.",
             fatal=True) from e
     if proc.returncode != 0:
         err = (proc.stderr or "").strip()

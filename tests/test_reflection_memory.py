@@ -91,7 +91,7 @@ EXPECTED_CASES = 53
 HER_FILE_NOTE_LINES = (
     "derived, not authored. your own sentences from sittings you passed on, "
     "kept whole",
-    "and in the order you typed them — nothing is sorted, labelled or scored."
+    "and in the order you typed them; nothing is sorted, labelled or scored."
     " safe to",
     "edit or delete; it starts over.",
 )
@@ -3065,7 +3065,7 @@ MUTANTS = (
      "        return {\"sentences\": []}"),
     ("M9 her file note is reworded by one clause",
      "study_lib.py",
-     "them — nothing is sorted, labelled or scored. safe to",
+     "them; nothing is sorted, labelled or scored. safe to",
      "them — nothing is sorted or scored. safe to"),
     ("M10 the reset copy is reordered to warn first",
      "study_lib.py",

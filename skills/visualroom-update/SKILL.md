@@ -2,15 +2,15 @@
 name: visualroom-update
 description: >-
   Replace the Study Room app folder using tools/update_room.py. Use when the
-  user asks to update, replace, or refresh the Study Room app folder — on any
+  user asks to update, replace, or refresh the Study Room app folder, on any
   coding agent (Cursor, Claude Code, Codex, etc.).
 ---
 
 # Visual Room Update
 
-Orchestrate `tools/update_room.py` only — do not duplicate replace logic.
+Orchestrate `tools/update_room.py` only; do not duplicate replace logic.
 
-Works on **any** coding agent. Bundled in every download under `skills/` —
+Works on **any** coding agent. Bundled in every download under `skills/`;
 install once with `python3 tools/install_agent_skills.py` (see
 `skills/README.md`).
 
@@ -52,10 +52,15 @@ python3 tools/update_room.py --source NEW_TREE --dest CURRENT
 
 ## Rules
 
-- **No duplicate logic** — only shell out to `tools/update_room.py`.
-- **No network fetch** — user already downloaded the release.
-- **No private repo push** — never `git push` the private checkout.
-- **No in-app updater** — external terminal workflow only.
+<!-- OWNER_COPY_SKILL_NETWORK_RULE -->
+- **No duplicate logic.** Only shell out to `tools/update_room.py`.
+- **This skill never fetches from the network.** The user already downloaded
+  the release; the skill works only with folders already on disk.
+- **The room has its own update path.** With the user's recorded yes, the room
+  itself may ask GitHub once a day for the newest version date and install on
+  the user's tap. That path belongs to the room, not to this skill; this
+  skill stays the terminal fallback.
+- **No private repo push.** Never `git push` the private checkout.
 
 ## Dry run
 

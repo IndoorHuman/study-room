@@ -335,6 +335,21 @@ OWNER_COPY_UPDATE_AGENT = "Or paste into your coding agent:"
 UPDATE_CLI_TEMPLATE = (
     "python3 tools/update_room.py --source DOWNLOADED --dest APP_FOLDER")
 UPDATE_SKILL_INSTALL_TEMPLATE = "python3 tools/install_agent_skills.py"
+# 26.9997 (D-01, D-18): the ONE consent question and its two answers.
+# Her words, adopted verbatim at the 2026-08-30 sitting (plan 06); pinned
+# byte-for-byte by tests/test_update_button.cjs; no em dash anywhere a
+# person reads.
+OWNER_COPY_UPDATE_CONSENT_ASK = "May this room ask GitHub once a day whether a newer version exists? Nothing of yours is sent."  # noqa: E501
+OWNER_COPY_UPDATE_CONSENT_YES = "yes"
+OWNER_COPY_UPDATE_CONSENT_NO = "no"
+# 26.9997 (D-10, D-17, D-02, D-18): the Update button, the ONE failed-install
+# line (the terminal path renders beneath it from the three existing fields)
+# and the Manage switch label. Her words, adopted verbatim at the 2026-08-30
+# sitting (plan 06); pinned byte-for-byte by tests/test_update_button.cjs;
+# no em dash anywhere a person reads.
+OWNER_COPY_UPDATE_BUTTON = "Update"
+OWNER_COPY_UPDATE_FAILED = "Nothing changed. The old copy is still in place. To update by hand, use Terminal from your app folder:"  # noqa: E501
+OWNER_COPY_UPDATE_SWITCH_LABEL = "Ask GitHub once a day for a newer version"
 UPDATE_AGENT_PROMPT = (
     "Update my Study Room: quit server.py first, then run "
     "python3 tools/update_room.py --source [downloaded folder] "
@@ -3188,6 +3203,258 @@ def base_consent_block():
     if state == librarian_call.CONSENT_STATE_UNASKED:
         block["base_consent_ask"] = BASE_CONSENT_ASK
     return block
+
+
+def update_status_block(stamp, include_result=False):
+    """The room's half of the daily-check consent, as fields on the SHIPPED
+    status route (26.9997 D-01..D-03, D-09). Fields, not a surface.
+
+    Resolved fresh on every call, never cached: the Manage switch, the
+    terminal and the toolbar question all write one record. A dev tree
+    (no stamp) gets `update_consent_state: None` and no question at all,
+    because a dev tree never checks and never offers (D-09). The question
+    travels only while the state is unasked AND the tree is stamped; an
+    empty slot renders nothing on the client. `update_install_ready` is
+    True exactly when the tap would not be refused for state reasons:
+    behind AND consented (D-10).
+
+    `include_result` is True ONLY on the status route: the helper's one
+    result note is read once and then gone (D-17), and the one read
+    belongs to the next status call, never to a consent answer's block.
+
+    Fail-open: an unreadable settings file answers the quiet shape rather
+    than raising into a handler. No credential at any depth."""
+    quiet = {"update_consent_state": None,
+             "update_install_ready": False}
+    if not stamp:
+        return quiet
+    try:
+        state = study_lib.update_consent_state()
+    except Exception:
+        return quiet
+    block = dict(quiet)
+    block["update_consent_state"] = state
+    block["update_consent_host"] = study_lib.UPDATE_SOURCE_HOST
+    if state == study_lib.UPDATE_CONSENT_STATE_UNASKED:
+        block["update_consent_ask"] = OWNER_COPY_UPDATE_CONSENT_ASK
+    try:
+        behind = study_lib.compute_show_update_prompt(
+            stamp, study_lib.read_latest_release_date())
+    except Exception:
+        behind = False
+    block["update_install_ready"] = bool(
+        behind and state == study_lib.UPDATE_CONSENT_STATE_CONSENTED)
+    if include_result:
+        try:
+            result = study_lib.read_update_result_once()
+        except Exception:
+            result = None
+        if result is not None:
+            block["update_result"] = result
+    return block
+
+
+def record_update_consent_answer(host, answer):
+    """Record her answer to the daily-check question and return the block.
+    The route's whole body, kept out of the handler so a suite can drive it
+    without a socket.
+
+    Fail-closed on the host: the answer names the host the page SHOWED, and
+    it is recorded only when that is the one host this room would ever ask
+    (`study_lib.UPDATE_SOURCE_HOST`). Fail-closed on the answer too: only
+    the yes token grants; anything else is a durable no. Nothing secret is
+    read, written or echoed."""
+    try:
+        stamp = study_lib.read_release_stamp(REPO_ROOT)
+    except Exception:
+        stamp = None
+    if host != study_lib.UPDATE_SOURCE_HOST:
+        return update_status_block(stamp)
+    try:
+        study_lib.record_update_consent(
+            OWNER_COPY_UPDATE_CONSENT_YES
+            if answer == OWNER_COPY_UPDATE_CONSENT_YES else "no")
+    except Exception:
+        pass
+    return update_status_block(stamp)
+
+
+# The one running StudyServer, set in main(): the Windows hand-off branch
+# must be able to shut the server down after starting the detached helper.
+SERVER_INSTANCE = None
+
+# The daily release check runs from the status route on a short-lived
+# daemon thread joined with this bounded wait. urlopen's timeout bounds
+# connect and read but NOT getaddrinfo, and the first status answer of the
+# day gates the initial room paint: on a black-holed resolver (captive
+# portal, half-down Wi-Fi) a synchronous check could stall that paint for
+# the OS resolver timeout. On a healthy network the thread finishes inside
+# the wait and the answer still lands in the SAME status read; past the
+# wait the room paints now and the result lands on a later poll.
+UPDATE_CHECK_STATUS_WAIT_S = 2.0
+
+# tools/update_room.py, imported by path and cached per path. REPO_ROOT is
+# patchable (suites point it at a temp tree), so the cache key is the path.
+_UPDATE_ROOM_MODULES = {}
+
+
+def _update_room_module():
+    """The helper beside this server, imported by path from the live app
+    folder so the in-process unpack/verify and the exec argv agree on ONE
+    file (D-13)."""
+    import importlib.util
+    path = str(REPO_ROOT / "tools" / "update_room.py")
+    mod = _UPDATE_ROOM_MODULES.get(path)
+    if mod is not None:
+        return mod
+    spec = importlib.util.spec_from_file_location(
+        "_studyroom_update_helper_%d" % len(_UPDATE_ROOM_MODULES), path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _UPDATE_ROOM_MODULES[path] = mod
+    return mod
+
+
+def update_job_running():
+    """True while any job whose worker could outlive the swap is running.
+
+    The five job dicts the install tap refuses on (RESEARCH Pitfall 7):
+    librarian, ask, import, collect export, vision read. Their workers are
+    daemon threads INSIDE this process, and the exec skips exit handlers,
+    so an exec while one runs kills it mid-write. Checked once before the
+    download, AGAIN after it (the download may block minutes, and a job
+    started in another tab during that window must still refuse the swap),
+    and once more at the hand-off itself."""
+    with LIBRARIAN_LOCK:
+        states = [LIBRARIAN_JOB.get("state"), ASK_JOB.get("state")]
+    with JOB_LOCK:
+        states += [IMPORT_JOB.get("state"), EXPORT_JOB.get("state"),
+                   VISION_JOB.get("state")]
+        if VISION_JOB.get("state") == "pending":
+            states.append("running")
+    return "running" in states
+
+
+def hand_off_to_update_helper(argv):
+    """Hand the room's process to the helper that outlives it (D-13).
+
+    On Mac and Linux this execs the helper in place: same process id, same
+    terminal, Ctrl+C still works, and the port is freed by the exec itself
+    (RESEARCH Q3 probes). On Windows a directory cannot be renamed while a
+    process runs inside it, so the helper starts detached with its working
+    directory OUTSIDE the app folder and the server shuts itself down; the
+    Windows branch is named honestly: it has not run on real Windows (the
+    promise is tested on Macs).
+
+    Called from a short one-shot timer AFTER the JSON answer has flushed,
+    never from the route body. exec skips exit handlers, which is exactly
+    why start_update_install refuses the tap while any job runs (RESEARCH
+    Pitfall 7): nothing that reads her photographs may outlive the swap."""
+    if update_job_running():
+        # A job began after the route's own re-check answered the browser:
+        # the exec would kill its worker thread mid-write. Abort the
+        # hand-off entirely; the room keeps running, and the prepared tree
+        # stays beside the app folder for the next tap.
+        return
+    if os.name != "nt":
+        os.execv(argv[0], argv)
+        return
+    subprocess.Popen(
+        argv, cwd=str(REPO_ROOT.parent),
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL, close_fds=True,
+        creationflags=(getattr(subprocess, "DETACHED_PROCESS", 0)
+                       | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)))
+    if SERVER_INSTANCE is not None:
+        # Never from the serve_forever thread; a worker thread is fine
+        # (daemon_threads is True on StudyServer).
+        threading.Thread(target=SERVER_INSTANCE.shutdown,
+                         daemon=True).start()
+
+
+def start_update_install():
+    """The install route's body (26.9997 D-12..D-17): refuse, download,
+    unpack, verify, then answer handing_off. Kept out of the handler so a
+    suite drives it without a socket.
+
+    The refusal order is fixed: no_stamp, no_consent, not_behind,
+    job_running, dest_not_writable, download_failed, bad_zip,
+    stamp_mismatch. Every refusal removes anything this tap created beside
+    the app folder, so a failed tap leaves no half-download behind (D-17).
+    The route never touches the library folder or anything of hers in the
+    settings home (D-14): the download and the unpack land BESIDE the app
+    folder, and the helper alone writes its result note.
+
+    On success the answer carries the helper argv under "_helper_argv";
+    the HANDLER pops it (it never reaches the browser) and starts the
+    short one-shot timer that calls hand_off_to_update_helper, so the
+    JSON answer flushes before the exec (RESEARCH Pattern 3)."""
+    stamp = study_lib.read_release_stamp(REPO_ROOT)
+    if not stamp:
+        return {"ok": True, "refused": "no_stamp"}
+    if study_lib.update_consent_state() != study_lib.UPDATE_CONSENT_STATE_CONSENTED:
+        return {"ok": True, "refused": "no_consent"}
+    latest = study_lib.read_latest_release_date()
+    if not study_lib.compute_show_update_prompt(stamp, latest):
+        return {"ok": True, "refused": "not_behind"}
+    # exec skips exit handlers (RESEARCH Pitfall 7): a collect child must
+    # never keep reading her photographs after the swap. The plan names
+    # LIBRARIAN_JOB / ASK_JOB / IMPORT_JOB; the collect EXPORT phase and
+    # the vision read spawn the same kind of child, so their job dicts
+    # are refused too (same token, same one line on screen).
+    if update_job_running():
+        return {"ok": True, "refused": "job_running"}
+    parent = REPO_ROOT.parent
+    if not os.access(str(parent), os.W_OK):
+        return {"ok": True, "refused": "dest_not_writable"}
+    found = study_lib.fetch_latest_release()
+    if found is None:
+        return {"ok": True, "refused": "download_failed"}
+    tag, asset_url, zipball_url = found
+    source_url = asset_url or zipball_url
+    if not source_url:
+        return {"ok": True, "refused": "download_failed"}
+    zip_path = parent / (REPO_ROOT.name + ".update-new-" + tag + ".zip")
+    unpack_dir = parent / (REPO_ROOT.name + ".update-new-" + tag)
+
+    def refuse_and_clean(token):
+        try:
+            if zip_path.is_file():
+                zip_path.unlink()
+        except OSError:
+            pass
+        shutil.rmtree(str(unpack_dir), ignore_errors=True)
+        return {"ok": True, "refused": token}
+
+    ok, _why = study_lib.download_release_zip(source_url, zip_path)
+    if not ok:
+        return refuse_and_clean("download_failed")
+    try:
+        helper = _update_room_module()
+    except Exception:
+        return refuse_and_clean("bad_zip")
+    ok, _why = helper.unpack_release_zip(zip_path, unpack_dir)
+    if not ok:
+        return refuse_and_clean("bad_zip")
+    root = helper.unpacked_tree_root(unpack_dir)
+    if root is None:
+        return refuse_and_clean("bad_zip")
+    ok, _why = helper.verify_source_stamps(Path(root), expect=tag)
+    if not ok:
+        return refuse_and_clean("stamp_mismatch")
+    # The download above may have blocked for up to
+    # UPDATE_DOWNLOAD_TIMEOUT_S: a job started in another tab during that
+    # window escaped the first check, and the exec would kill its worker
+    # thread mid-write (an interrupted import discards the whole import).
+    # Re-check before arming the hand-off; the refusal cleans up like any
+    # other so a refused tap still leaves nothing behind (D-17).
+    if update_job_running():
+        return refuse_and_clean("job_running")
+    argv = [sys.executable, str(REPO_ROOT / "tools" / "update_room.py"),
+            "--swap-and-restart", "--new", str(root),
+            "--dest", str(REPO_ROOT), "--expect", tag, "--restart"]
+    return {"ok": True, "handing_off": True, "expect": tag,
+            "_helper_argv": argv}
 
 
 def record_base_consent_answer(address, answer):
@@ -13456,6 +13723,26 @@ class StudyHandler(SimpleHTTPRequestHandler):
         stamp = study_lib.read_release_stamp(REPO_ROOT)
         remembered = study_lib.read_last_run_version()
         show_whats_new = study_lib.compute_show_whats_new(stamp, remembered)
+        # 26.9997 (D-04): the consented daily check runs HERE, on open, and
+        # nowhere else; it writes the file the next line reads. Fail-open:
+        # a check that raises or stalls must never stop the room from
+        # describing itself, so the check runs on a daemon thread joined
+        # with a bounded wait (UPDATE_CHECK_STATUS_WAIT_S: the urlopen
+        # timeout does not bound DNS resolution). The daily gate lives
+        # inside the check itself, so a stalled first attempt does not
+        # spawn a second request from later polls the same day.
+        def quiet_update_check():
+            try:
+                study_lib.maybe_check_for_newer_release(stamp)
+            except Exception:
+                pass
+        try:
+            checker = threading.Thread(target=quiet_update_check,
+                                       daemon=True)
+            checker.start()
+            checker.join(UPDATE_CHECK_STATUS_WAIT_S)
+        except Exception:
+            pass
         latest = study_lib.read_latest_release_date()
         show_update_prompt = study_lib.compute_show_update_prompt(stamp, latest)
         if show_update_prompt:
@@ -13487,6 +13774,7 @@ class StudyHandler(SimpleHTTPRequestHandler):
             payload["update_cli"] = UPDATE_CLI_TEMPLATE
             payload["update_skill_install"] = UPDATE_SKILL_INSTALL_TEMPLATE
             payload["update_agent_prompt"] = UPDATE_AGENT_PROMPT
+        payload.update(update_status_block(stamp, include_result=True))
         return self.json_response(payload)
 
     def handle_items(self):
@@ -13922,6 +14210,35 @@ class StudyHandler(SimpleHTTPRequestHandler):
         return self.json_response(
             {"ok": True, **record_base_consent_answer(data.get("address"),
                                                       data.get("answer"))})
+
+    def handle_update_consent(self, data):
+        """26.9997 (D-01, D-02): her answer to the daily-check question.
+
+        Records exactly what the Manage switch records, through
+        `study_lib.record_update_consent`, so the two surfaces share one
+        record in the settings home. The client never keeps a copy of the
+        answer; it re-reads the status route after posting.
+
+        ALWAYS 200: an answer the room cannot record is a quiet block, never
+        an error state in the room. No key, at any depth."""
+        data = data if isinstance(data, dict) else {}
+        return self.json_response(
+            {"ok": True, **record_update_consent_answer(data.get("host"),
+                                                        data.get("answer"))})
+
+    def handle_update_install(self, data):
+        """26.9997 (D-12, D-13): their tap. The body refuses or prepares the
+        new tree beside the app folder; only the HANDLER starts the short
+        one-shot timer that hands the process to the helper, so the JSON
+        answer flushes before the exec (RESEARCH Pattern 3). The argv never
+        reaches the browser. ALWAYS 200: a refused tap is one quiet line in
+        the room, never an error state. No key, at any depth."""
+        answer = start_update_install()
+        argv = answer.pop("_helper_argv", None)
+        if argv:
+            threading.Timer(0.5, hand_off_to_update_helper,
+                            args=[argv]).start()
+        return self.json_response({"ok": True, **answer})
 
     def handle_librarian_progress(self):
         """The pre-sort job's snapshot (26-02) plus the notebook's shelf
@@ -15063,6 +15380,17 @@ class StudyHandler(SimpleHTTPRequestHandler):
             # and never touches, reads or echoes a key.
             if route == "/api/librarian/base-consent":
                 return self.handle_base_consent(data)
+            # 26.9997 (D-01): the daily-check consent rides the SAME dispatch
+            # as every POST, behind host_allowed and origin_allowed above, so
+            # a forged page cannot say yes on her behalf.
+            if route == "/api/update/consent":
+                return self.handle_update_consent(data)
+            # 26.9997 (D-12..D-17): the tap rides the SAME dispatch, behind
+            # host_allowed and origin_allowed above, and the body refuses
+            # besides on server-side state (stamp, consent, behind, jobs),
+            # so a forged page cannot start a download or a swap.
+            if route == "/api/update/install":
+                return self.handle_update_install(data)
             return self.json_error(404, f"No such route: {route}")
         except study_lib.StoreCorruptError:
             return self.json_error(500, CORRUPT_MSG)
@@ -19548,6 +19876,8 @@ def main():
               f"may be running.")
         print("Close it, then run this command again.")
         sys.exit(1)
+    global SERVER_INSTANCE
+    SERVER_INSTANCE = httpd
     print("The Study Room")
     print(f"  library: {httpd.library_root}")
     print(f"  serving at http://127.0.0.1:{PORT}")

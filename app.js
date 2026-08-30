@@ -568,6 +568,19 @@
     'Update my Study Room: quit server.py first, then run ' +
     'python3 tools/update_room.py --source [downloaded folder] ' +
     '--dest [live app folder].';
+  // 26.9997 (D-01, D-18): the two answers to the ONE daily-check question.
+  // The question itself travels in the status payload from the server
+  // constant (the base_consent precedent); only the button words are
+  // mirrored here. Her words, adopted verbatim at the 2026-08-30 sitting
+  // (plan 06). Byte-pinned.
+  var OWNER_COPY_UPDATE_CONSENT_YES = 'yes';
+  var OWNER_COPY_UPDATE_CONSENT_NO = 'no';
+  // 26.9997 (D-10, D-17, D-18): the Update button and the ONE failed line.
+  // Her words, adopted verbatim at the 2026-08-30 sitting (plan 06).
+  // Byte-pinned against server.py.
+  var OWNER_COPY_UPDATE_BUTTON = 'Update';
+  var OWNER_COPY_UPDATE_FAILED = 'Nothing changed. The old copy is still in place. To update by hand, use Terminal from your app folder:';
+  var OWNER_COPY_UPDATE_SWITCH_LABEL = 'Ask GitHub once a day for a newer version';
 
   // #171 launch blocker 3 — her words 2026-08-28, shape B, one shared
   // sentence for every long job (writing sort and picture bring-in).
@@ -620,16 +633,161 @@
     return el;
   }
 
+  // 26.9997 (D-01, D-02): her answer goes straight to the server and
+  // NOTHING is remembered here. The repaint re-reads the status route, so
+  // what the line shows afterwards is the server's answer and never this
+  // function's guess. `.catch` renders nothing: an answer that did not land
+  // must not be made to look like one that did.
+  function handleUpdateConsent(host, answer) {
+    return apiPost('/api/update/consent', { host: host, answer: answer })
+      .then(function () { return apiGet('/api/status'); })
+      .then(function (res) {
+        if (res && res.ok) { applyWhatsNewFromStatus(res.data); }
+      })
+      .catch(function () { });
+  }
+
+  // 26.9997 (D-17): the ONE failed-install line. The sentence says nothing
+  // changed and the old copy is still in place; the terminal path renders
+  // beneath it from the same three fields the behind line uses, so every
+  // failure branch lands on one honest shape. The last status answer is
+  // kept only so a failure painted after the POST still shows the same
+  // terminal strings the server last sent (fallbacks otherwise).
+  var UPDATE_STATUS_SNAPSHOT = null;
+
+  function paintUpdateFailed(el, data) {
+    el.className = 'update-failed-line';
+    el.style.cssText = 'color:var(--ink);font-size:15px;font-weight:500;' +
+      'margin:8px 0 14px;width:100%;text-align:center';
+    el.innerHTML = '';
+    var lead = document.createElement('span');
+    lead.textContent = OWNER_COPY_UPDATE_FAILED;
+    el.appendChild(lead);
+    appendCopyBlock(el, (data && data.update_cli) || UPDATE_CLI_FALLBACK);
+    var skillLead = document.createElement('span');
+    skillLead.style.cssText = 'display:block;margin-top:10px;' +
+      'color:var(--ink-soft);font-size:14px;font-weight:400';
+    skillLead.textContent = OWNER_COPY_UPDATE_SKILL;
+    el.appendChild(skillLead);
+    appendCopyBlock(el,
+      (data && data.update_skill_install) || UPDATE_SKILL_INSTALL_FALLBACK);
+    var agentLead = document.createElement('span');
+    agentLead.style.cssText = 'display:block;margin-top:10px;' +
+      'color:var(--ink-soft);font-size:14px;font-weight:400';
+    agentLead.textContent = OWNER_COPY_UPDATE_AGENT;
+    el.appendChild(agentLead);
+    appendCopyBlock(el,
+      (data && data.update_agent_prompt) || UPDATE_AGENT_FALLBACK);
+    el.hidden = false;
+  }
+
+  // 26.9997 (D-12): the tap is ONE POST. A refusal (or an answer the room
+  // could not read) paints the failed line and nothing re-enables: the
+  // terminal path beneath it is the way on (D-17). A handing_off answer
+  // starts the wait for the room to come back.
+  function startUpdateInstall(button) {
+    if (button) { button.disabled = true; }
+    apiPost('/api/update/install', {}).then(function (res) {
+      var data = (res && res.data) || {};
+      if (data.handing_off === true) {
+        waitForRoomBack(90000);
+        return;
+      }
+      var el = updateWhatsNewBox();
+      if (el) { paintUpdateFailed(el, UPDATE_STATUS_SNAPSHOT); }
+    }).catch(function () {
+      var el = updateWhatsNewBox();
+      if (el) { paintUpdateFailed(el, UPDATE_STATUS_SNAPSHOT); }
+    });
+  }
+
+  // 26.9997 (D-04 held on the tap path): a chained ONE-SHOT timeout,
+  // re-armed only after each answer or failure, never a repeating timer.
+  // The first successful status answer means the room is back: reload.
+  // Past the deadline the failed line shows with the terminal path.
+  function waitForRoomBack(deadlineMs) {
+    var deadline = Date.now() + (deadlineMs || 90000);
+    function askOnce() {
+      apiGet('/api/status').then(function (res) {
+        if (res && res.ok) { location.reload(); return; }
+        rearm();
+      }).catch(function () { rearm(); });
+    }
+    function rearm() {
+      if (Date.now() >= deadline) {
+        var el = updateWhatsNewBox();
+        if (el) { paintUpdateFailed(el, UPDATE_STATUS_SNAPSHOT); }
+        return;
+      }
+      setTimeout(askOnce, 2000);
+    }
+    rearm();
+  }
+
   function applyWhatsNewFromStatus(data) {
     // Server owns policy; client mounts chrome. Behind prompt wins over quiet line.
+    UPDATE_STATUS_SNAPSHOT = data || null;
     var showBehind = !!(data && data.show_update_prompt);
     var show = !!(data && data.show_whats_new);
     if (data && Object.prototype.hasOwnProperty.call(data, 'release_date')) {
       APP.releaseDate = data.release_date || null;
     }
+    // 26.9997: the consent state rides every status read; null on a dev tree.
+    APP.updateConsentState = (data && typeof data.update_consent_state === 'string')
+      ? data.update_consent_state : null;
+    // 26.9997 (D-01): the ONE question, sent by the server only while it is
+    // unasked on a stamped tree. It paints on this same line, before
+    // anything else, with two .update-consent-answer buttons; a slot with
+    // no question paints nothing. Built with createElement, never an HTML
+    // accumulator.
+    var consentAsk = (data && typeof data.update_consent_ask === 'string')
+      ? data.update_consent_ask : '';
+    var consentHost = (data && typeof data.update_consent_host === 'string')
+      ? data.update_consent_host : '';
+    APP.updateConsentHost = consentHost || null;
     var el = updateWhatsNewBox();
     if (!el) { return; }
-    if (showBehind) {
+    // 26.9997 (D-17): the one-shot update_result rides exactly one status
+    // answer; a failed swap's line has precedence over the consent ask and
+    // the behind branch, because "nothing changed" is the first honest
+    // thing to say after a tap that did not land.
+    var installFailed = !!(data && data.update_result &&
+      data.update_result.outcome === 'failed');
+    if (installFailed) {
+      paintUpdateFailed(el, data);
+    } else if (consentAsk && consentHost) {
+      el.className = 'update-consent-ask';
+      el.style.cssText = 'color:var(--ink);font-size:15px;font-weight:500;' +
+        'margin:8px 0 14px;width:100%;text-align:center';
+      el.innerHTML = '';
+      var question = document.createElement('span');
+      question.textContent = consentAsk;
+      el.appendChild(question);
+      var answersRow = document.createElement('span');
+      answersRow.style.cssText = 'display:block;margin-top:8px';
+      var answerWords = [
+        ['yes', OWNER_COPY_UPDATE_CONSENT_YES],
+        ['no', OWNER_COPY_UPDATE_CONSENT_NO]
+      ];
+      for (var w = 0; w < answerWords.length; w++) {
+        (function (token, word) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'update-consent-answer';
+          btn.setAttribute('data-answer', token);
+          btn.setAttribute('data-host', consentHost);
+          btn.textContent = word;
+          btn.style.cssText = 'margin:0 6px';
+          btn.addEventListener('click', function () {
+            handleUpdateConsent(btn.getAttribute('data-host'),
+              btn.getAttribute('data-answer'));
+          });
+          answersRow.appendChild(btn);
+        }(answerWords[w][0], answerWords[w][1]));
+      }
+      el.appendChild(answersRow);
+      el.hidden = false;
+    } else if (showBehind) {
       el.className = 'update-behind-prompt';
       el.style.cssText = 'color:var(--ink);font-size:15px;font-weight:500;' +
         'margin:8px 0 14px;width:100%;text-align:center';
@@ -657,6 +815,18 @@
       agentLead.textContent = OWNER_COPY_UPDATE_AGENT;
       el.appendChild(agentLead);
       appendCopyBlock(el, agentPrompt);
+      if (data && data.update_install_ready === true) {
+        var installBtn = document.createElement('button');
+        installBtn.type = 'button';
+        installBtn.id = 'update-install-button';
+        installBtn.textContent = OWNER_COPY_UPDATE_BUTTON;
+        installBtn.style.cssText = 'display:block;margin:12px auto 0;' +
+          'font:inherit;cursor:pointer';
+        installBtn.addEventListener('click', function () {
+          startUpdateInstall(installBtn);
+        });
+        el.appendChild(installBtn);
+      }
       el.hidden = false;
     } else if (show) {
       el.className = '';
@@ -23184,6 +23354,39 @@
         MANAGE.sectionOpen.library = !open;
         renderLibrarySection();
       });
+    }
+    // 26.9997 (D-02): the answer is changeable HERE, right under the
+    // version line and only under the same stamp guard (a dev tree shows
+    // neither the line nor the switch, D-09). Built with createElement
+    // AFTER the innerHTML paint. The tap posts the OPPOSITE of the current
+    // state to the same consent route the toolbar question writes, then
+    // re-runs the status read so the switch and the toolbar line both
+    // re-render from the one recorded answer.
+    if (open && typeof APP.releaseDate === 'string' && APP.releaseDate &&
+        APP.updateConsentHost) {
+      var switchRow = document.createElement('p');
+      switchRow.style.cssText = 'color:var(--ink-soft);font-size:14px;' +
+        'margin:4px 0 0';
+      var switchLabel = document.createElement('span');
+      switchLabel.textContent = OWNER_COPY_UPDATE_SWITCH_LABEL;
+      switchRow.appendChild(switchLabel);
+      var consentOn = APP.updateConsentState === 'consented';
+      var sw = document.createElement('button');
+      sw.type = 'button';
+      sw.id = 'update-check-switch';
+      sw.setAttribute('data-answer', consentOn ? 'no' : 'yes');
+      sw.textContent = consentOn ? 'on' : 'off';
+      sw.style.cssText = 'background:none;border:none;color:var(--ink);' +
+        'cursor:pointer;font:inherit;text-decoration:underline;' +
+        'margin-left:6px';
+      sw.addEventListener('click', function () {
+        handleUpdateConsent(APP.updateConsentHost,
+          sw.getAttribute('data-answer')).then(function () {
+            renderLibrarySection();
+          });
+      });
+      switchRow.appendChild(sw);
+      box.appendChild(switchRow);
     }
   }
 

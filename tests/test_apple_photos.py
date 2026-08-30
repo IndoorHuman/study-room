@@ -1554,7 +1554,7 @@ class AStoppedRoomStopsReadingHerPhotographs(unittest.TestCase):
                 apple_photos._run_osascript("delay 30")
         self.assertTrue(caught.exception.fatal)
         self.assertEqual(str(caught.exception),
-                         "Reaching Photos took too long — try the candle "
+                         "Reaching Photos took too long. Try the candle "
                          "again.")
         self.assertEqual(list(apple_photos._LIVE_CHILDREN), [])
 

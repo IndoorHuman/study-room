@@ -199,7 +199,7 @@ def _run_osascript(script, *args):
             "reach Notes.") from e
     except subprocess.TimeoutExpired as e:
         raise NotesCollectError(
-            "Reaching Notes took too long — try the candle again.") from e
+            "Reaching Notes took too long. Try the candle again.") from e
     if proc.returncode != 0:
         err = (proc.stderr or "").strip()
         if "-1743" in err:
@@ -208,7 +208,7 @@ def _run_osascript(script, *args):
                 "the one-time prompt (it names your terminal app), then try "
                 "the candle again.")
         raise NotesCollectError(
-            "The room couldn't reach Notes just now — try the candle again.")
+            "The room couldn't reach Notes just now. Try the candle again.")
     return proc.stdout
 
 

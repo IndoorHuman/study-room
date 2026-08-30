@@ -324,7 +324,7 @@ group('labelRefused', function () {
   const said = String(r.stderr || '') + String(r.stdout || '');
   if (said.indexOf('selftest-escape-' + process.pid) === -1) {
     violations.push('[labelRefused] the refusal must NAME the label it ' +
-      'received so an invisible character is visible — nothing in the ' +
+      'received so an invisible character is visible. nothing in the ' +
       'output carries it. Got: ' + JSON.stringify(said.slice(0, 300)));
   }
 });

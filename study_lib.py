@@ -78,6 +78,15 @@ Design contract (ported from the house's palace_lib.py discipline):
     a corrupt items.json raises StoreCorruptError — the caller must refuse
     to proceed rather than overwrite user judgments (blessing history is
     sacred; never auto-reinitialize).
+  * the consented daily check (26.9997, D-01..D-09, D-16); see the
+    section banner above update_consent_state. ONE seam,
+    _update_transport, carries every outbound byte of the update path and
+    is the one name a suite fakes to prove the zero before consent. The
+    request carries UPDATE_HEADERS and nothing else. The check may write
+    exactly three files under the settings home: last_update_check (the
+    day of the attempt, written before the request), latest_release_date
+    (on success; the file the behind-latest line already reads) and
+    update_check.log (one line on failure). Never the library folder.
 """
 import base64
 import hashlib
@@ -92,7 +101,9 @@ import time
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import unquote
+import urllib.error
+import urllib.request
+from urllib.parse import unquote, urlsplit
 
 # ---------------------------------------------------------------------------
 # Constants (the walking-rules table, RESEARCH Pattern 6)
@@ -194,6 +205,35 @@ LAST_RUN_VERSION_NAME = "last_run_version"
 # RELEASE_DATE; copied into ~/.study-room/latest_release_date by update_room.
 LATEST_RELEASE_DATE_NAME = "LATEST_RELEASE_DATE"
 LAST_LATEST_RELEASE_NAME = "latest_release_date"
+# 26.9997 (D-01..D-07, D-16): the consented daily check. The consent record
+# holds the HOST agreed to, never a boolean (the base_consent precedent), so a
+# change of source re-asks by construction. A decline is durable on disk too:
+# the question is asked once, and a no must survive a restart.
+UPDATE_CONSENT_KEY = "update_check"
+UPDATE_CONSENT_ANSWER_KEY = "update_check_answer"
+UPDATE_SOURCE_HOST = "api.github.com"
+UPDATE_CONSENT_STATE_UNASKED = "unasked"
+UPDATE_CONSENT_STATE_CONSENTED = "consented"
+UPDATE_CONSENT_STATE_DECLINED = "declined"
+# One-line date of the last ATTEMPT (success or not): the daily gate (D-04).
+LAST_UPDATE_CHECK_NAME = "last_update_check"
+# The install helper's one note back to the next status call; read once.
+UPDATE_RESULT_NAME = "update_result"
+# A failed check says nothing on screen; it leaves one line here (D-16).
+UPDATE_CHECK_LOG_NAME = "update_check.log"
+# The URL is built from the ONE host the consent names, so the host appears
+# once in this file and the consent compares against the same constant.
+RELEASES_LATEST_URL = (
+    "https://%s/repos/IndoorHuman/study-room/releases/latest"
+    % UPDATE_SOURCE_HOST)
+# Exactly these two headers, nothing else (D-06): a constant agent string
+# with no version in it, and the GitHub JSON media type. No ETag, no
+# identifier, no query string, no token of any kind.
+UPDATE_HEADERS = {"User-Agent": "study-room",
+                  "Accept": "application/vnd.github+json"}
+UPDATE_CHECK_TIMEOUT_S = 10
+UPDATE_DOWNLOAD_TIMEOUT_S = 120
+UPDATE_DOWNLOAD_MAX_BYTES = 200 * 1024 * 1024
 
 
 def room_config_dir():
@@ -241,6 +281,24 @@ def latest_release_date_path():
     stamp the behind prompt compares against. Pure path math.
     """
     return room_config_dir() / LAST_LATEST_RELEASE_NAME
+
+
+def last_update_check_path():
+    """One-line date of the last daily-check attempt (26.9997 D-04). Pure
+    path math, a sibling of latest_release_date."""
+    return room_config_dir() / LAST_UPDATE_CHECK_NAME
+
+
+def update_result_path():
+    """The install helper's one-shot result note (26.9997 D-17). Pure path
+    math; read once by the next status call, then removed."""
+    return room_config_dir() / UPDATE_RESULT_NAME
+
+
+def update_check_log_path():
+    """Where a failed daily check leaves one line (26.9997 D-16). Pure path
+    math."""
+    return room_config_dir() / UPDATE_CHECK_LOG_NAME
 
 
 def read_release_stamp(repo_root):
@@ -330,8 +388,10 @@ def read_latest_release_date():
 def write_latest_release_date(stamp):
     """Persist the shipped-latest pointer under settings home (UPD-09).
 
-    Written by update_room --sync-latest-only or a full folder replace —
-    the running app never phones home to discover versions.
+    Written by the terminal path (update_room --sync-latest-only or a full
+    folder replace) AND, since 26.9997, by the consented daily check
+    (maybe_check_for_newer_release). It is the ONE file the behind-latest
+    line reads; the check invents no second signal (D-07).
     """
     if not stamp:
         return
@@ -353,6 +413,266 @@ def compute_show_update_prompt(local_stamp, latest_stamp):
     if local_stamp >= latest_stamp:
         return False
     return local_stamp < latest_stamp
+
+
+# ---------------------------------------------------------------------------
+# 26.9997: the consented daily check (D-01..D-09, D-16)
+#
+# Every byte the update path sends leaves through ONE function,
+# `_update_transport`, and a suite fakes that one name to prove the zero: with
+# no yes recorded, the list of URLs it saw is `[]`, and the positive control in
+# the same run sees exactly `[RELEASES_LATEST_URL]` after a yes. The request
+# carries `UPDATE_HEADERS` and nothing else: no version, no identifier, no
+# token, no query string (D-06). The check may write exactly three files under
+# the settings home: `last_update_check` (the day of the attempt, written
+# BEFORE the request so an attempt counts), `latest_release_date` (on
+# success, the same file the behind-latest line already reads) and
+# `update_check.log` (one line on failure, nothing on screen). It never
+# touches the library folder.
+# ---------------------------------------------------------------------------
+
+def update_consent_state():
+    """Which of the three states the daily-check consent is in, RIGHT NOW.
+
+    Re-read from disk at the moment it is asked, never cached: `--setup`,
+    the Manage switch and the toolbar question all write the same record.
+    The record holds the HOST agreed to; anything that is not exactly that
+    string reads as not consented (a planted boolean, another host, a
+    number). A durable `no` reads as declined so the room never asks twice.
+    """
+    import librarian_call  # lazy: librarian_call imports this module
+    settings = librarian_call.load_settings()
+    value = (settings or {}).get(UPDATE_CONSENT_KEY)
+    if isinstance(value, str) and value == UPDATE_SOURCE_HOST:
+        return UPDATE_CONSENT_STATE_CONSENTED
+    if (settings or {}).get(UPDATE_CONSENT_ANSWER_KEY) == "no":
+        return UPDATE_CONSENT_STATE_DECLINED
+    return UPDATE_CONSENT_STATE_UNASKED
+
+
+def record_update_consent(answer):
+    """Record her answer to the ONE question and return the resulting state.
+
+    Load -> modify -> write FROM DISK immediately before writing (the
+    `record_base_consent` discipline: the hazard is a lost update across
+    processes, and the field a lost update drops is a decline). The write
+    is skipped when the file already says what it would say.
+
+    Fail-closed on the answer: only the exact token "yes" grants. Anything
+    else removes an earlier yes and records a durable no. Nothing secret is
+    written; the value stored is a host name.
+    """
+    import librarian_call  # lazy: librarian_call imports this module
+    settings = librarian_call.load_settings()          # FROM DISK
+    want = dict(settings)
+    if answer == "yes":
+        want[UPDATE_CONSENT_KEY] = UPDATE_SOURCE_HOST
+        want.pop(UPDATE_CONSENT_ANSWER_KEY, None)
+    else:
+        want.pop(UPDATE_CONSENT_KEY, None)
+        want[UPDATE_CONSENT_ANSWER_KEY] = "no"
+    if want != settings:
+        librarian_call.save_settings(want)
+    return update_consent_state()
+
+
+def _update_transport(url, headers, timeout_s, max_bytes=None):
+    """The ONE seam every outbound byte of the update path passes through.
+
+    Returns the same (status, headers_dict, bytes) triple a fake returns, so
+    nothing above here can tell them apart. Redirects ARE followed (the
+    release asset answers 302 to a download host), which is why this is not
+    `librarian_call._transport`. There is deliberately no parameter through
+    which a credential could be attached. `max_bytes`, when given, caps the
+    body read; a body over the cap comes back as a None status so the caller
+    treats it as no usable answer. stdlib only (law 8).
+    """
+    req = urllib.request.Request(url, method="GET")
+    for name, value in (headers or {}).items():
+        req.add_header(name, value)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            if max_bytes is None:
+                body = resp.read()
+            else:
+                body = resp.read(max_bytes + 1)
+                if len(body) > max_bytes:
+                    return None, {}, b""
+            return resp.status, dict(resp.headers), body
+    except urllib.error.HTTPError as exc:
+        return exc.code, dict(exc.headers or {}), b""
+    except (urllib.error.URLError, OSError, ValueError):
+        return None, {}, b""
+
+
+def fetch_latest_release():
+    """(tag, asset_url, zipball_url) from the Release marked Latest, or None.
+
+    Writes nothing. Status 200 and a JSON body are required; `tag_name`
+    must be a bare YYYY-MM-DD date before anything downstream trusts it
+    (Pitfall 6). The asset is looked up by its exact name
+    `study-room-<tag>.zip`; `zipball_url` is returned as the fallback for a
+    Release published without the asset. Rate-limit headers are not read:
+    one request a day is a small fraction of the unsigned limit and a 403 is
+    just a failed check. No ETag is stored or sent (D-06).
+    """
+    status, _headers, body = _update_transport(
+        RELEASES_LATEST_URL, dict(UPDATE_HEADERS), UPDATE_CHECK_TIMEOUT_S)
+    if status != 200:
+        return None
+    try:
+        data = json.loads(body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError, AttributeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    tag = str(data.get("tag_name") or "").strip()
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", tag):
+        return None
+    asset = None
+    for entry in data.get("assets") or []:
+        if isinstance(entry, dict) and entry.get("name") == "study-room-%s.zip" % tag:
+            asset = entry.get("browser_download_url")
+    zipball = data.get("zipball_url")
+    return tag, (asset if isinstance(asset, str) else None), (
+        zipball if isinstance(zipball, str) else None)
+
+
+def download_release_zip(url, dest_path):
+    """Fetch the release zip through the ONE seam and land it beside the app
+    folder (26.9997 D-12). Headers: the constant agent string only; the JSON
+    Accept is dropped because the answer is a zip, not the API shape. The
+    body is capped at UPDATE_DOWNLOAD_MAX_BYTES; a non-200, an over-cap or
+    an empty body answers (False, "download_failed") and nothing is written.
+    The write goes through atomic_write_bytes so a torn download can never
+    sit at dest_path looking whole. The URL comes verbatim from the
+    release JSON body, so it is trusted only as far as its scheme:
+    anything but https is refused without a request -- the API answer is
+    not allowed to downgrade the transport to http (or point it at
+    file:), because the only integrity the installed bytes get is the
+    stamp match against the announced tag.
+    """
+    if urlsplit(str(url or "")).scheme != "https":
+        return False, "download_failed"
+    headers = {name: value for name, value in UPDATE_HEADERS.items()
+               if name != "Accept"}
+    status, _headers, body = _update_transport(
+        url, headers, UPDATE_DOWNLOAD_TIMEOUT_S,
+        max_bytes=UPDATE_DOWNLOAD_MAX_BYTES)
+    if status != 200 or not body:
+        return False, "download_failed"
+    atomic_write_bytes(str(dest_path), body)
+    return True, ""
+
+
+def read_last_update_check():
+    """The date of the last daily-check attempt, or None (D-04)."""
+    path = last_update_check_path()
+    if not path.is_file():
+        return None
+    try:
+        line = path.read_text(encoding="utf-8").strip().splitlines()
+    except OSError:
+        return None
+    if not line:
+        return None
+    day = line[0].strip()
+    return day or None
+
+
+def write_last_update_check(day):
+    """Remember today's attempt (D-04 / D-16). Written BEFORE the request."""
+    if not day:
+        return
+    ensure_room_config_dir()
+    path = last_update_check_path()
+    path.write_text(str(day).strip() + "\n", encoding="utf-8")
+
+
+UPDATE_CHECK_LOG_MAX_BYTES = 64 * 1024
+
+
+def append_update_check_log(why):
+    """One line per failed check: "<iso timestamp> <why>" (D-16).
+
+    Never a response body, never a header: one machine token per line, so
+    the file stays as pasteable as settings.json. Truncated to empty first
+    when it already exceeds 64 KB, so it cannot grow without bound.
+    """
+    ensure_room_config_dir()
+    path = update_check_log_path()
+    try:
+        if path.is_file() and path.stat().st_size > UPDATE_CHECK_LOG_MAX_BYTES:
+            path.write_text("", encoding="utf-8")
+    except OSError:
+        pass
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    token = " ".join(str(why or "check_failed").split())
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write("%s %s\n" % (stamp, token))
+    except OSError:
+        pass
+
+
+def maybe_check_for_newer_release(stamp):
+    """One attempt per local calendar day, only with a stamp and a yes.
+
+    Order matters and is the whole contract:
+      1. no stamp -> return before consent is even read (D-09: a dev tree
+         never reaches the network, even with a shared yes on disk);
+      2. no yes -> return (D-02/D-03: zero requests);
+      3. already attempted today -> return (D-04: once a day, only on open);
+      4. write today's date FIRST, so the attempt counts even when the
+         request fails (D-16: the room tries another day, not another minute);
+      5. one GET through the seam; failure -> one log line, nothing else;
+         success -> write the one file the behind-latest line reads (D-07).
+    Called from the status path only; there is no timer anywhere.
+    """
+    if not stamp:
+        return
+    if update_consent_state() != UPDATE_CONSENT_STATE_CONSENTED:
+        return
+    today = datetime.now().date().isoformat()
+    if read_last_update_check() == today:
+        return
+    write_last_update_check(today)
+    found = fetch_latest_release()
+    if found is None:
+        append_update_check_log("check_failed")
+        return
+    write_latest_release_date(found[0])
+
+
+def read_update_result_once():
+    """The install helper's result note as a dict, then the file is gone.
+
+    Fail-open: missing, unreadable or off-shape reads as None. The next
+    status call after an install is the one that gets to see it (D-17).
+    """
+    path = update_result_path()
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = None
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    return data if isinstance(data, dict) else None
+
+
+def write_update_result(outcome, why):
+    """Leave the one-shot result note for the next status call (D-17)."""
+    ensure_room_config_dir()
+    body = json.dumps({
+        "outcome": str(outcome),
+        "why": str(why or ""),
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }, ensure_ascii=False, indent=1, sort_keys=True).encode("utf-8")
+    atomic_write_bytes(str(update_result_path()), body)
 
 
 def ensure_room_config_dir():
@@ -2336,7 +2656,7 @@ def validate_state_change(store, change):
         return f"unknown item id: {change.get('id')!r}"
     if item["state"] == "retired" and to != "retired" \
             and change.get("via") != "management-dig-out":
-        return ("item is retired — leaving 'retired' requires the deliberate "
+        return ("item is retired; leaving 'retired' requires the deliberate "
                 "management dig-out (via='management-dig-out')")
     # CR-01 fence (law 5): reactions belong to surfaced items only. A
     # reaction on never_show would quietly un-never it (resting resurfaces
@@ -4196,7 +4516,7 @@ LEARNED_HEADER = (
     "<!-- read once, from your diary and the notes you marked as your own.\n"
     "     yours to edit or delete. the room never adds to this file on its\n"
     "     own. the one edit it may make: when you set a subject aside, it\n"
-    "     takes the lines about that subject out — it shows you what it\n"
+    "     takes the lines about that subject out. it shows you what it\n"
     "     took, keeps what it took, and can put any of it back. -->\n"
     "\n")
 
@@ -4236,7 +4556,7 @@ def apply_subject_removal(library_root, subject, lines, now_ms):
         before_text = path.read_text(encoding="utf-8")
     except OSError:
         raise SubjectRemovalRefused(
-            "there is nothing to remove from — the room has not learned "
+            "there is nothing to remove from; the room has not learned "
             "anything yet, or the file is unreadable")
     requested = []
     for ln in (lines or []):
@@ -4253,7 +4573,7 @@ def apply_subject_removal(library_root, subject, lines, now_ms):
     missing = [ln for ln in requested if ln not in present]
     if missing:
         raise SubjectRemovalRefused(
-            "%d of the %d lines are not in the file exactly as asked — "
+            "%d of the %d lines are not in the file exactly as asked; "
             "removing the rest would show her a removal that did less "
             "than it claims" % (len(missing), len(requested)))
 
@@ -4344,7 +4664,7 @@ def undo_subject_removal(library_root, ms):
     current_sha = hashlib.sha256(current.encode("utf-8")).hexdigest()
     if current_sha != target.get("after_sha256"):
         raise SubjectRemovalRefused(
-            "the file has changed since this removal — putting the old "
+            "the file has changed since this removal; putting the old "
             "text back would erase her own later edits, so the kept "
             "lines are handed back to her instead")
     atomic_write_bytes(
@@ -4410,7 +4730,7 @@ def put_back_lines(library_root, ms, lines):
     strangers = [ln for ln in requested if ln not in still_removed]
     if strangers:
         raise SubjectRemovalRefused(
-            "%d of the %d lines are not ones this removal still holds — "
+            "%d of the %d lines are not ones this removal still holds; "
             "putting back the rest would show her a put-back that did "
             "less than it claims" % (len(strangers), len(requested)))
 
@@ -4421,7 +4741,7 @@ def put_back_lines(library_root, ms, lines):
         raise SubjectRemovalRefused("the learned file is unreadable")
     if current != _reconstruct_after_removal(target, still_removed):
         raise SubjectRemovalRefused(
-            "the file has changed since this removal — writing the old "
+            "the file has changed since this removal; writing the old "
             "lines back in would erase her own later edits, so the kept "
             "lines stay hers to place herself")
 
@@ -5843,7 +6163,7 @@ def redetect_screenshots(store, library_root, cache_reader, program_fp):
         report["refused"] = stale
         report["why"] = (
             str(stale) + " of " + str(len(targets)) + " photographs have no "
-            "current Vision reading — the note pass would run on stale text")
+            "current Vision reading; the note pass would run on stale text")
         return report
 
     by_id = {}
@@ -6449,11 +6769,11 @@ def merge_refusal_why(store, retired_id, blessed_ids, placed_ids):
     if retired is None:
         return None                       # already retired — a no-op
     if is_blessed(retired, blessed_ids):
-        return ("a blessed screenshot is never merged away — it would leave "
+        return ("a blessed screenshot is never merged away; it would leave "
                 "the album with nothing said about it")
     if str(retired_id) in (placed_ids or ()):
         return ("a screenshot already placed on a notebook page is never "
-                "merged away — the page's picture would point at an item "
+                "merged away; the page's picture would point at an item "
                 "that is gone")
     return None
 
@@ -6741,7 +7061,7 @@ def note_pass_gate(store, library_root, cache_reader, program_fp):
     if missing:
         gate["why"] = (
             str(missing) + " of " + str(len(targets)) + " photographs have "
-            "no current Vision reading — the note pass would run on stale "
+            "no current Vision reading; the note pass would run on stale "
             "text")
     return gate
 
@@ -6923,7 +7243,7 @@ def mint_screenshot_note(store, library_root, group, cache_reader,
         if not _vision_entry_is_current(cache_reader(item_id), program_fp):
             report["refused"] = len(rows)
             report["why"] = (
-                "a photograph in this group has no current Vision reading — "
+                "a photograph in this group has no current Vision reading; "
                 "the note would carry text an older program produced")
             return report
 
@@ -6937,7 +7257,7 @@ def mint_screenshot_note(store, library_root, group, cache_reader,
         else:
             report["no_note"] += 1
     if not cleaned:
-        report["why"] = "no shot in this group cleaned — the picture is all "\
+        report["why"] = "no shot in this group cleaned; the picture is all "\
                         "there is"
         return report
 
@@ -6976,7 +7296,7 @@ def mint_screenshot_note(store, library_root, group, cache_reader,
         if rel is None:
             report["move_failed"] += 1
             report["why"] = (
-                "a snapshot did not arrive intact in attachments/ — nothing "
+                "a snapshot did not arrive intact in attachments/; nothing "
                 "was written and the original is untouched")
             return report
         moves.append((item_id, source_rel, rel))
@@ -7370,7 +7690,7 @@ REFLECTION_TITLE_CAP = 200
 # The file's own one-line header, so the surprising half of the design is
 # legible to whoever opens the file rather than only to whoever reads this
 # module.
-REFLECTIONS_FILE_NOTE = "derived, not authored. one record per draft that landed — passed drafts as well as saved ones, because a title you saw twice is a repeat either way. safe to edit or delete; it starts over."  # noqa: E501
+REFLECTIONS_FILE_NOTE = "derived, not authored. one record per draft that landed, passed drafts as well as saved ones, because a title you saw twice is a repeat either way. safe to edit or delete; it starts over."  # noqa: E501
 
 
 def reflections_file_path(library_root):
@@ -7507,7 +7827,7 @@ HER_SENTENCES_CAP = 60
 # the one a later reader is likeliest to cut as redundant. Pinned
 # byte-for-byte by tests/test_reflection_memory.py against her lines re-typed
 # there, never imported from here.
-HER_SENTENCES_FILE_NOTE = "derived, not authored. your own sentences from sittings you passed on, kept whole and in the order you typed them — nothing is sorted, labelled or scored. safe to edit or delete; it starts over."  # noqa: E501
+HER_SENTENCES_FILE_NOTE = "derived, not authored. your own sentences from sittings you passed on, kept whole and in the order you typed them; nothing is sorted, labelled or scored. safe to edit or delete; it starts over."  # noqa: E501
 
 # ---------------------------------------------------------------------------
 # WHAT THE ROOM SAYS ABOUT DELETING THE LIBRARIAN'S MEMORY.

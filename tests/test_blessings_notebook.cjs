@@ -5325,7 +5325,7 @@ const NB_REGION_SRC = NB_MARK_DECLS + optFn('nbPaintMarkRegion') + '\n';
     function (t) {
       assert.strictEqual(region.indexOf(t), -1,
         '(9f) LAW 1: the editor introduces no timer of any kind ("' + t +
-        '") — nothing in this room ever surfaces itself');
+        '"). nothing in this room ever surfaces itself');
     });
 })();
 

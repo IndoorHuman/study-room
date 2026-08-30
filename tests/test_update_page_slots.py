@@ -16,6 +16,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 SLOT_MARKERS = (
+    "OWNER_COPY_UPDATE_CONSENT_CLAUSE",
     "OWNER_COPY_UPDATE_NEWEST_DATE",
     "OWNER_COPY_UPDATE_WHATS_NEW",
     "OWNER_COPY_UPDATE_DOWNLOAD",
@@ -24,19 +25,39 @@ SLOT_MARKERS = (
     "OWNER_COPY_UPDATE_GOING_BACK",
 )
 
+# 26.9997-06 (D-18): the consent clause slot. The value below is HERS,
+# adopted verbatim at the 2026-08-30 sitting; pinned here and in README.md
+# together. It must never contain the two gated substrings
+# ("check for updates", "auto-update").
+OWNER_COPY_UPDATE_CONSENT_CLAUSE = (
+    "If you say yes to the room's one question, the room asks GitHub once a day\n"
+    "whether a newer version exists. That request carries nothing of yours. You can\n"
+    "change your answer any time on the Manage screen. If you say no, or never\n"
+    "answer, the room makes no request at all, and the steps below still work.")
 OWNER_COPY_UPDATE_NEWEST_DATE = ""
 OWNER_COPY_UPDATE_WHATS_NEW = ""
 OWNER_COPY_UPDATE_DOWNLOAD = (
     "Download the latest release from GitHub and unzip it.")
+# Re-pinned 26.9997-05 to the README's reworded steps (26.9996-09 terminal
+# UX), which the old three-line pin had drifted from (deferred item D-02-C).
 OWNER_COPY_UPDATE_STEPS = (
-    "1. Quit the Study Room.\n"
-    "2. Replace the old app folder with the new one.\n"
-    "3. Open the Study Room again. Your library folder is unchanged.")
+    "1. Quit the Study Room (`Ctrl+C` in the terminal running "
+    "`python3 server.py`).\n"
+    "2. Replace the app folder (not your library folder):\n"
+    "\n"
+    "   ```bash\n"
+    "   python3 tools/update_room.py --source ~/Downloads/study-room "
+    "--dest ~/study-room\n"
+    "   ```\n"
+    "\n"
+    "3. Start again: `python3 server.py`")
 OWNER_COPY_UPDATE_REPLACE_WARNING = (
     "Only replace the app folder. Do not delete or move your library folder.")
+# Re-pinned 26.9997-05 to the README's backup-folder wording (D-02-C).
 OWNER_COPY_UPDATE_GOING_BACK = (
-    "If something goes wrong, quit and open the previous app folder again. "
-    "Your library is still where you left it.")
+    "If something goes wrong, quit and open your backup folder\n"
+    "(`study-room.update-backup-…`) or the previous app folder. Your library is\n"
+    "still where you left it.")
 
 UPDATE_SECTION_BEGIN = "<!-- BEGIN UPDATE SECTION -->"
 UPDATE_SECTION_END = "<!-- END UPDATE SECTION -->"
@@ -49,11 +70,17 @@ class UpdatePageSlotsContract(unittest.TestCase):
         self.assertEqual(OWNER_COPY_UPDATE_NEWEST_DATE, "")
         self.assertEqual(OWNER_COPY_UPDATE_WHATS_NEW, "")
         for name in (
+                "OWNER_COPY_UPDATE_CONSENT_CLAUSE",
                 "OWNER_COPY_UPDATE_DOWNLOAD",
                 "OWNER_COPY_UPDATE_STEPS",
                 "OWNER_COPY_UPDATE_REPLACE_WARNING",
                 "OWNER_COPY_UPDATE_GOING_BACK"):
             self.assertTrue(globals()[name], name + " must carry owner copy")
+        # A stand-in clause carrying either gated substring would trip the
+        # README gate below by construction; refuse it at the pin too.
+        lowered_clause = OWNER_COPY_UPDATE_CONSENT_CLAUSE.lower()
+        self.assertNotIn("check for updates", lowered_clause)
+        self.assertNotIn("auto-update", lowered_clause)
 
     def test_readme_carries_all_slot_markers(self):
         readme = REPO_ROOT / "README.md"
@@ -70,6 +97,7 @@ class UpdatePageSlotsContract(unittest.TestCase):
         self.assertIn(UPDATE_SECTION_BEGIN, text)
         self.assertIn(UPDATE_SECTION_END, text)
         for slot in (
+                OWNER_COPY_UPDATE_CONSENT_CLAUSE,
                 OWNER_COPY_UPDATE_DOWNLOAD,
                 OWNER_COPY_UPDATE_STEPS,
                 OWNER_COPY_UPDATE_REPLACE_WARNING,

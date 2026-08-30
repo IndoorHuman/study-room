@@ -43,20 +43,17 @@ Your library lives in its own folder (outside this app folder). Setup writes key
 
 ## Update
 
-The app never checks online for updates. When a newer release exists, download
-it and replace the app folder. Your library folder stays unchanged.
+<!-- OWNER_COPY_UPDATE_CONSENT_CLAUSE -->
+If you say yes to the room's one question, the room asks GitHub once a day
+whether a newer version exists. That request carries nothing of yours. You can
+change your answer any time on the Manage screen. If you say no, or never
+answer, the room makes no request at all, and the steps below still work.
 
 <!-- OWNER_COPY_UPDATE_NEWEST_DATE -->
 2026-08-30
 
 <!-- OWNER_COPY_UPDATE_WHATS_NEW -->
-The room says things more plainly now: no dashes in anything it tells you.
-
-An import can be fully stopped while it is running; everything sorted so far is kept.
-
-Every download now includes the coding-agent update skill, with a one-command installer (`python3 tools/install_agent_skills.py`).
-
-Smaller: the Photos export root follows your account home, room copies of your notes carry tidier front matter, and there is a builder for the Mansfield demo library.
+Update on the steamline update through the app without you follow the steps to update from the previous readme
 
 <!-- OWNER_COPY_UPDATE_DOWNLOAD -->
 Download the latest release from GitHub and unzip it.

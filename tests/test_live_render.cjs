@@ -547,7 +547,14 @@ const DISABLED_POINTER_EVENTS = 'none';
 // and twin-moved with EXPECTED_NODE_SUITES in test_stage_public.py. ⛔ Moved
 // because a suite was added (Wave-0 Nyquist instrument), never to make a red
 // gate green. MEASURED: `ls tests/*.cjs | wc -l` = 71.
-const NODE_SUITES = 74;
+// 74 -> 78, moved by 26.9997-01 (2026-08-30) in the SAME COMMIT as the suite
+// that caused it: tests/test_update_button.cjs (UPD-15/18, a Wave-0 Nyquist
+// instrument, red at this commit), and twin-moved with EXPECTED_NODE_SUITES
+// in test_stage_public.py. Three of the four steps are INHERITED drift
+// (test_pipeline_verbatim.cjs 27-01, test_stats_exposure.cjs 27-03,
+// test_survey_wall_invite.cjs 2026-08-30 re-ruling), attributed by commit in
+// test_stage_public.py's ledger. MEASURED: `ls tests/*.cjs | wc -l` = 78.
+const NODE_SUITES = 78;
 
 /* The subpixel-layout allowance, pinned BY VALUE. Scene-px recovery is
    half-up (`Math.round`); this epsilon is the CSS-px slack allowed on the

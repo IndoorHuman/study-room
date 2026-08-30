@@ -34,9 +34,13 @@ RELEASE_CLI = REPO_ROOT / "tools" / "release_public.py"
 WHATS_NEW_NAME = "WHATS_NEW.md"
 RELEASE_DATE_NAME = "RELEASE_DATE"
 LATEST_RELEASE_DATE_NAME = "LATEST_RELEASE_DATE"
+# Re-pinned 26.9997-05 (deferred item D-02-B): WHATS_NEW.md was re-sat for
+# the 2026-08-30 release (ee7c442) and this pin had not moved with the note.
+# The pin follows the note; whoever next re-sits the note moves this line in
+# the same commit.
 OWNER_COPY_WHATS_NEW = (
-    "Updates replace the app folder only. Your library stays in its own "
-    "folder, outside the app.")
+    "The room says things more plainly now: no dashes in anything it "
+    "tells you.")
 
 
 class ReleasePublicContract(unittest.TestCase):
@@ -90,8 +94,8 @@ class ReleasePublicContract(unittest.TestCase):
                          "WHATS_NEW.md must not join stage_public.REQUIRED")
         self.assertEqual(
             OWNER_COPY_WHATS_NEW,
-            "Updates replace the app folder only. Your library stays in its "
-            "own folder, outside the app.")
+            "The room says things more plainly now: no dashes in anything "
+            "it tells you.")
         whats_new = REPO_ROOT / WHATS_NEW_NAME
         self.assertTrue(whats_new.is_file(), "WHATS_NEW.md must exist after sitting")
         self.assertIn(OWNER_COPY_WHATS_NEW.strip(), whats_new.read_text(encoding="utf-8"))
