@@ -83,3 +83,7 @@ If something goes wrong, quit and open your backup folder
 still where you left it.
 
 <!-- END UPDATE SECTION -->
+
+## How did it go?
+
+If you have run the room, [say how it went](https://docs.google.com/forms/d/e/1FAIpQLSfJqSJb7xO07R40lVNJDKWGEVnfEm8wDbg7jyH0Dqh86x2t9w/viewform?usp=pp_url&entry.970072248=project+page). Six quick taps, and it never asks who you are.
