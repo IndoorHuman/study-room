@@ -1,6 +1,24 @@
 # The Study Room
 
-thank you for using this app I have built, it is an open source app, which it means you have 100% freedom to change it and run it however you like but I cannot provide any kind of support
+A small visual room that sits on top of your notes and brings your old writing back to you, a few pieces at a time. You point it at your notes folder (an Obsidian vault works as it is), and each time you walk in, a few old pieces are waiting on the shelf, shown exactly as you wrote them. The slow pace is the design.
+
+You need a computer and a terminal to run it. It is free and open source, and nothing you bring in leaves your machine. What it costs is hours, not money: bringing everything in and sorting can take an evening, or longer than a day, and I cannot tell you which until it is in it. Writing comes in first; pictures are much slower.
+
+It is the first room of a visual home I am building for myself; the kitchen is next.
+
+Things to know before you start:
+
+- For reflections you need a model on your own machine or an OpenAI or Anthropic key. If a paid AI key already sits in your setup, the room will use it silently, so check that first.
+- The Notes and Photos import doors are Mac-only for now. On Windows you point it at your vault folder.
+- If you quit in the middle of a long picture import, that work is lost. Making an interrupted import survivable is the first thing I plan to build after launch.
+- Sometimes it goes quiet and looks stuck. It is still working. Having it say more as it goes is planned too.
+- Machines with less than 16GB of RAM are not recommended. No mobile yet.
+
+## Ask a question
+
+I'm one person building this on my own. I'll do my best to answer. Getting it running always gets a reply, and it's been tested on Macs. I read questions once a week, usually at the weekend. If I can't answer something, you will still get a short line saying so.
+
+[Ask here](https://github.com/IndoorHuman/study-room/discussions). There is no email, and I am not taking code contributions right now, but it is open source: you have full freedom to change it and run it however you like.
 
 ## Where to start
 
